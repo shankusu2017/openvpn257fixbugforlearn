@@ -5497,13 +5497,16 @@ add_option(struct options *options,
 #endif
     else if (streq(p[0], "mode") && p[1] && !p[2])
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         VERIFY_PERMISSION(OPT_P_GENERAL);
         if (streq(p[1], "p2p"))
         {
+            msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
             options->mode = MODE_POINT_TO_POINT;
         }
         else if (streq(p[1], "server"))
         {
+            msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
             options->mode = MODE_SERVER;
         }
         else
@@ -8164,12 +8167,14 @@ add_option(struct options *options,
     }
     else if (streq(p[0], "tls-server") && !p[1])
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         VERIFY_PERMISSION(OPT_P_GENERAL);
         options->tls_server = true;
     }
     else if (streq(p[0], "tls-client") && !p[1])
     {
         VERIFY_PERMISSION(OPT_P_GENERAL);
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         options->tls_client = true;
     }
     else if (streq(p[0], "ca") && p[1] && !p[2])

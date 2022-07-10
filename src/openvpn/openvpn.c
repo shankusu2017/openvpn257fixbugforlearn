@@ -64,36 +64,43 @@ tunnel_point_to_point(struct context *c)
     c->mode = CM_P2P;
 
     /* initialize tunnel instance */
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     init_instance_handle_signals(c, c->es, CC_HARD_USR1_TO_HUP);
     if (IS_SIG(c))
     {
         return;
     }
-
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     /* main event loop */
     while (true)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         perf_push(PERF_EVENT_LOOP);
+        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
 
         /* process timers, TLS, etc. */
         pre_select(c);
+        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         P2P_CHECK_SIG();
-
+        msg(M_ERRNO, "%s:%s:%d status:%d", __FILE__, __FUNCTION__, __LINE__, c->c2.event_set_status);
         /* set up and do the I/O wait */
         io_wait(c, p2p_iow_flags(c));
+        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         P2P_CHECK_SIG();
-
+        msg(M_ERRNO, "%s:%s:%d status:%d", __FILE__, __FUNCTION__, __LINE__, c->c2.event_set_status);
         /* timeout? */
         if (c->c2.event_set_status == ES_TIMEOUT)
         {
+        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
             perf_pop();
             continue;
         }
-
+        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         /* process the I/O which triggered select */
         process_io(c);
+        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         P2P_CHECK_SIG();
-
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         perf_pop();
     }
 
@@ -303,6 +310,7 @@ openvpn_main(int argc, char *argv[])
             do
             {
                 /* run tunnel depending on mode */
+                msg(M_ERRNO, "%s:%s:%d c.options.mode:%d", __FILE__, __FUNCTION__, __LINE__, c.options.mode);
                 switch (c.options.mode)
                 {
                     case MODE_POINT_TO_POINT:

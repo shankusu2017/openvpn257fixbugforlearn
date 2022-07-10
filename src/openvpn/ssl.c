@@ -792,7 +792,7 @@ state_name(int state)
     }
 }
 
-static const char *
+const char *
 packet_opcode_name(int op)
 {
     switch (op)
@@ -873,6 +873,7 @@ print_key_id(struct tls_multi *multi, struct gc_arena *gc)
 bool
 is_hard_reset_method2(int op)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     if (op == P_CONTROL_HARD_RESET_CLIENT_V2 || op == P_CONTROL_HARD_RESET_SERVER_V2
         || op == P_CONTROL_HARD_RESET_CLIENT_V3)
     {
@@ -1080,6 +1081,7 @@ tls_session_user_pass_enabled(struct tls_session *session)
 static void
 tls_session_init(struct tls_multi *multi, struct tls_session *session)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     struct gc_arena gc = gc_new();
 
     dmsg(D_TLS_DEBUG, "TLS: tls_session_init: entry");
@@ -1105,6 +1107,7 @@ tls_session_init(struct tls_multi *multi, struct tls_session *session)
         session->initial_opcode = session->opt->tls_crypt_v2 ?
                                   P_CONTROL_HARD_RESET_CLIENT_V3 : P_CONTROL_HARD_RESET_CLIENT_V2;
     }
+    msg(M_ERRNO, "[%s:%s:%d] session->initial_opcode: %d", __FILE__, __FUNCTION__, __LINE__, session->initial_opcode);
 
     /* Initialize control channel authentication parameters */
     session->tls_wrap = session->opt->tls_wrap;
@@ -1171,6 +1174,7 @@ tls_session_free(struct tls_session *session, bool clear)
 static void
 move_session(struct tls_multi *multi, int dest, int src, bool reinit_src)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     msg(D_TLS_DEBUG_LOW, "TLS: move_session: dest=%s src=%s reinit_src=%d",
         session_index_name(dest),
         session_index_name(src),
@@ -1196,6 +1200,7 @@ move_session(struct tls_multi *multi, int dest, int src, bool reinit_src)
 static void
 reset_session(struct tls_multi *multi, struct tls_session *session)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     tls_session_free(session, false);
     tls_session_init(multi, session);
 }
@@ -1273,6 +1278,7 @@ tls_multi_init(struct tls_options *tls_options)
 void
 tls_multi_init_finalize(struct tls_multi *multi, const struct frame *frame)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     tls_init_control_channel_frame_parameters(frame, &multi->opt.frame);
 
     /* initialize the active and untrusted sessions */
@@ -2690,7 +2696,7 @@ tls_process(struct tls_multi *multi,
         key_state_free(ks_lame, true);
         msg(D_TLS_DEBUG_LOW, "TLS: tls_process: killed expiring key");
     }
-
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     do
     {
         update_time();
@@ -2711,11 +2717,13 @@ tls_process(struct tls_multi *multi,
          * CHANGED with 2.0 -> now we may send tunnel configuration
          * info over the control channel.
          */
-
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         /* Initial handshake */
         if (ks->state == S_INITIAL)
         {
+            msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
             buf = reliable_get_buf_output_sequenced(ks->send_reliable);
+            msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
             if (buf)
             {
                 ks->must_negotiate = now + session->opt->handshake_window;
@@ -2744,7 +2752,7 @@ tls_process(struct tls_multi *multi,
 #endif
             }
         }
-
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         /* Are we timed out on receive? */
         if (now >= ks->must_negotiate && ks->state < S_ACTIVE)
         {
@@ -2776,7 +2784,7 @@ tls_process(struct tls_multi *multi,
 
             dmsg(D_TLS_DEBUG_MED, "STATE S_START");
         }
-
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         /* Wait for ACK */
         if (((ks->state == S_GOT_KEY && !session->opt->server)
              || (ks->state == S_SENT_KEY && session->opt->server)))
@@ -2806,11 +2814,13 @@ tls_process(struct tls_multi *multi,
 #endif
             }
         }
-
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         /* Reliable buffer to outgoing TCP/UDP (send up to CONTROL_SEND_ACK_MAX ACKs
          * for previously received packets) */
         if (!to_link->len && reliable_can_send(ks->send_reliable))
         {
+            msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
+
             int opcode;
             struct buffer b;
 
@@ -2818,9 +2828,10 @@ tls_process(struct tls_multi *multi,
             ASSERT(buf);
             b = *buf;
             INCR_SENT;
-
+            msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);            
             write_control_auth(session, ks, &b, to_link_addr, opcode,
                                CONTROL_SEND_ACK_MAX, true);
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&b));
             *to_link = b;
             active = true;
             state_change = true;
@@ -3037,13 +3048,11 @@ tls_multi_process(struct tls_multi *multi,
      * Process each session object having state of S_INITIAL or greater,
      * and which has a defined remote IP addr.
      */
-
     for (int i = 0; i < TM_SIZE; ++i)
     {
         struct tls_session *session = &multi->session[i];
         struct key_state *ks = &session->key[KS_PRIMARY];
         struct key_state *ks_lame = &session->key[KS_LAME_DUCK];
-
         /* set initial remote address */
         if (i == TM_ACTIVE && ks->state == S_INITIAL
             && link_socket_actual_defined(&to_link_socket_info->lsa->actual))
@@ -3062,14 +3071,14 @@ tls_multi_process(struct tls_multi *multi,
         if (ks->state >= S_INITIAL && link_socket_actual_defined(&ks->remote_addr))
         {
             struct link_socket_actual *tla = NULL;
-
             update_time();
-
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
             if (tls_process(multi, session, to_link, &tla,
                             to_link_socket_info, wakeup))
             {
                 active = TLSMP_ACTIVE;
             }
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
             /*
              * If tls_process produced an outgoing packet,
@@ -3110,7 +3119,6 @@ tls_multi_process(struct tls_multi *multi,
             }
         }
     }
-
     update_time();
 
     int tas = tls_authentication_status(multi, TLS_MULTI_AUTH_STATUS_INTERVAL);
@@ -3177,7 +3185,6 @@ nohard:
 
     perf_pop();
     gc_free(&gc);
-
     return (tas == TLS_AUTHENTICATION_FAILED) ? TLSMP_KILL : active;
 }
 
@@ -3308,7 +3315,7 @@ tls_pre_decrypt(struct tls_multi *multi,
                 bool floated,
                 const uint8_t **ad_start)
 {
-
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     if (buf->len <= 0)
     {
         buf->len = 0;

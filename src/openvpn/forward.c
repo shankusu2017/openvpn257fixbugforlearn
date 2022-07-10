@@ -145,9 +145,11 @@ check_tls(struct context *c)
 
     if (interval_test(&c->c2.tmp_int))
     {
+        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         const int tmp_status = tls_multi_process
                                    (c->c2.tls_multi, &c->c2.to_link, &c->c2.to_link_addr,
                                    get_link_socket_info(c), &wakeup);
+        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         if (tmp_status == TLSMP_ACTIVE)
         {
             update_time();
@@ -1556,6 +1558,7 @@ process_ip_header(struct context *c, unsigned int flags, struct buffer *buf)
 void
 process_outgoing_link(struct context *c)
 {
+    msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
     struct gc_arena gc = gc_new();
     int error_code = 0;
 
@@ -1606,7 +1609,8 @@ process_outgoing_link(struct context *c)
                 fprintf(stderr, "W");
             }
 #endif
-            msg(D_LINK_RW, "%s WRITE [%d] to %s: %s",
+            msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+            msg(M_ERRNO, "%s WRITE [%d] to %s: %s",
                 proto2ascii(c->c2.link_socket->info.proto, c->c2.link_socket->info.af, true),
                 BLEN(&c->c2.to_link),
                 print_link_socket_actual(c->c2.to_link_addr, &gc),
@@ -1619,11 +1623,12 @@ process_outgoing_link(struct context *c)
 
                 /* If Socks5 over UDP, prepend header */
                 socks_preprocess_outgoing_link(c, &to_addr, &size_delta);
-
+                msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
                 /* Send packet */
                 size = link_socket_write(c->c2.link_socket,
                                          &c->c2.to_link,
                                          to_addr);
+                 msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
 
                 /* Undo effect of prepend */
                 link_socket_write_post_size_adjust(&size, size_delta, &c->c2.to_link);
@@ -1677,12 +1682,7 @@ process_outgoing_link(struct context *c)
 
         /* for unreachable network and "connecting" state switch to the next host */
 
-        bool unreachable = error_code ==
-#ifdef _WIN32
-            WSAENETUNREACH;
-#else
-            ENETUNREACH;
-#endif
+        bool unreachable = error_code == ENETUNREACH;
         if (size < 0 && unreachable && c->c2.tls_multi
             && !tls_initial_packet_received(c->c2.tls_multi) && c->options.mode == MODE_POINT_TO_POINT)
         {
@@ -1758,12 +1758,9 @@ process_outgoing_tun(struct context *c)
                                 &c->c2.n_trunc_tun_write);
 #endif
 
-#ifdef _WIN32
-        size = write_tun_buffered(c->c1.tuntap, &c->c2.to_tun);
-#else
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         size = write_tun(c->c1.tuntap, BPTR(&c->c2.to_tun), BLEN(&c->c2.to_tun));
-#endif
-
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         if (size > 0)
         {
             c->c2.tun_write_bytes += size;
@@ -1834,12 +1831,13 @@ pre_select(struct context *c)
     {
         return;
     }
-
+    msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
     /* If tls is enabled, do tls control channel packet processing. */
     if (c->c2.tls_multi)
     {
         check_tls(c);
     }
+    msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
 
     /* In certain cases, TLS errors will require a restart */
     check_tls_errors(c);
@@ -1990,16 +1988,6 @@ io_wait_dowork(struct context *c, const unsigned int flags)
         tuntap |= EVENT_READ;
     }
 
-#ifdef _WIN32
-    if (tuntap_is_wintun(c->c1.tuntap))
-    {
-        /*
-         * With wintun we are only interested in read event. Ring buffer is
-         * always ready for write, so we don't do wait.
-         */
-        tuntap = EVENT_READ;
-    }
-#endif
 
     /*
      * Configure event wait based on socket, tuntap flags.
@@ -2103,7 +2091,9 @@ process_io(struct context *c)
     /* TCP/UDP port ready to accept write */
     if (status & SOCKET_WRITE)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         process_outgoing_link(c);
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     }
     /* TUN device ready to accept write */
     else if (status & TUN_WRITE)

@@ -189,6 +189,7 @@ helper_client_server(struct options *o)
         }
 
         o->mode = MODE_SERVER;
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         o->tls_server = true;
 
         /* local ifconfig is "base address + 1" and "+2" */

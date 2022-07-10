@@ -589,14 +589,18 @@ init_query_passwords(const struct context *c)
     /* Certificate password input */
     if (c->options.key_pass_file)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         pem_password_setup(c->options.key_pass_file);
     }
 
 #if P2MP
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     /* Auth user/pass input */
     if (c->options.auth_user_pass_file)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
 #ifdef ENABLE_MANAGEMENT
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         auth_user_pass_setup(c->options.auth_user_pass_file, &c->options.sc_info);
 #else
         auth_user_pass_setup(c->options.auth_user_pass_file, NULL);
@@ -2504,6 +2508,7 @@ do_startup_pause(struct context *c)
 {
     if (!c->first_time)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         socket_restart_pause(c);
     }
     else
@@ -2804,6 +2809,7 @@ do_init_crypto_tls_c1(struct context *c)
 static void
 do_init_crypto_tls(struct context *c, const unsigned int flags)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     const struct options *options = &c->options;
     struct tls_options to;
     bool packet_id_long_form;
@@ -3029,6 +3035,7 @@ do_init_crypto_tls(struct context *c, const unsigned int flags)
      */
     if (flags & CF_INIT_TLS_MULTI)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         c->c2.tls_multi = tls_multi_init(&to);
     }
 
@@ -3041,8 +3048,10 @@ do_init_crypto_tls(struct context *c, const unsigned int flags)
 static void
 do_init_finalize_tls_frame(struct context *c)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     if (c->c2.tls_multi)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         tls_multi_init_finalize(c->c2.tls_multi, &c->c2.frame);
         ASSERT(EXPANDED_SIZE(&c->c2.tls_multi->opt.frame) <=
                EXPANDED_SIZE(&c->c2.frame));
@@ -3051,10 +3060,12 @@ do_init_finalize_tls_frame(struct context *c)
     }
     if (c->c2.tls_auth_standalone)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         tls_auth_standalone_finalize(c->c2.tls_auth_standalone, &c->c2.frame);
         frame_print(&c->c2.tls_auth_standalone->frame, D_MTU_INFO,
                     "TLS-Auth MTU parms");
     }
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
 }
 
 /*
@@ -3074,12 +3085,16 @@ do_init_crypto_none(const struct context *c)
 static void
 do_init_crypto(struct context *c, const unsigned int flags)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     if (c->options.shared_secret_file)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         do_init_crypto_static(c, flags);
     }
     else if (c->options.tls_server || c->options.tls_client)
     {
+        msg(M_ERRNO, "%s:%s:%d %d", __FILE__, __FUNCTION__, __LINE__, (int)c->options.tls_server);
+        msg(M_ERRNO, "%s:%s:%d %d", __FILE__, __FUNCTION__, __LINE__, (int)c->options.tls_client);
         do_init_crypto_tls(c, flags);
     }
     else                        /* no encryption or authentication. */
@@ -3326,6 +3341,7 @@ do_option_warnings(struct context *c)
 static void
 do_init_frame_tls(struct context *c)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     do_init_finalize_tls_frame(c);
 }
 
@@ -3746,6 +3762,7 @@ do_open_status_output(struct context *c)
 {
     if (!c->c1.status_output)
     {
+        msg(M_ERRNO, "%s:%s:%d status_output:%s", __FILE__, __FUNCTION__, __LINE__, c->c1.status_output);
         c->c1.status_output = status_open(c->options.status_file,
                                           c->options.status_file_update_freq,
                                           -1,
@@ -3833,9 +3850,6 @@ do_setup_fast_io(struct context *c)
 {
     if (c->options.fast_io)
     {
-#ifdef _WIN32
-        msg(M_INFO, "NOTE: --fast-io is disabled since we are running on Windows");
-#else
         if (!proto_is_udp(c->options.ce.proto))
         {
             msg(M_INFO, "NOTE: --fast-io is disabled since we are not using UDP");
@@ -3853,7 +3867,6 @@ do_setup_fast_io(struct context *c)
                 c->c2.fast_io = true;
             }
         }
-#endif
     }
 }
 
@@ -4120,7 +4133,9 @@ void
 init_instance_handle_signals(struct context *c, const struct env_set *env, const unsigned int flags)
 {
     pre_init_signal_catch();
+    msg(M_ERRNO, "%s:%s:%d flags:%d", __FILE__, __FUNCTION__, __LINE__, flags);
     init_instance(c, env, flags);
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     post_init_signal_catch();
 
     /*
@@ -4133,6 +4148,7 @@ init_instance_handle_signals(struct context *c, const struct env_set *env, const
         remap_signal(c);
         uninit_management_callback();
     }
+     msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
 }
 
 /*
@@ -4141,6 +4157,7 @@ init_instance_handle_signals(struct context *c, const struct env_set *env, const
 void
 init_instance(struct context *c, const struct env_set *env, const unsigned int flags)
 {
+    msg(M_ERRNO, "%s:%s:%d c->mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
     const struct options *options = &c->options;
     const bool child = (c->mode == CM_CHILD_TCP || c->mode == CM_CHILD_UDP);
     int link_socket_mode = LS_MODE_DEFAULT;
@@ -4208,9 +4225,11 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
     }
 
 #if P2MP
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     /* get passwords if undefined */
     if (auth_retry_get() == AR_INTERACT)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         init_query_passwords(c);
     }
 #endif
@@ -4281,6 +4300,7 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
     /* allocate our socket object */
     if (c->mode == CM_P2P || c->mode == CM_TOP || c->mode == CM_CHILD_TCP)
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         do_link_socket_new(c);
     }
 
@@ -4295,6 +4315,7 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
     /* init crypto layer */
     {
         unsigned int crypto_flags = 0;
+        msg(M_ERRNO, "%s:%s:%d c->mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
         if (c->mode == CM_TOP)
         {
             crypto_flags = CF_INIT_TLS_AUTH_STANDALONE;
@@ -4307,6 +4328,7 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
         {
             crypto_flags = CF_INIT_TLS_MULTI;
         }
+        msg(M_ERRNO, "%s:%s:%d c->mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
         do_init_crypto(c, crypto_flags);
         if (IS_SIG(c) && !child)
         {
@@ -4348,9 +4370,10 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
     /* bind the TCP/UDP socket */
     if (c->mode == CM_P2P || c->mode == CM_TOP || c->mode == CM_CHILD_TCP)
     {
+        msg(M_ERRNO, "[%s:%s:%d] mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
         do_init_socket_1(c, link_socket_mode);
     }
-
+    msg(M_ERRNO, "[%s:%s:%d] mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
     /* initialize tun/tap device object,
      * open tun/tap device, ifconfig, run up script, etc. */
     if (!(options->up_delay || PULL_DEFINED(options)) && (c->mode == CM_P2P || c->mode == CM_TOP))
@@ -4388,11 +4411,13 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
 
     /* initialise connect timeout timer */
     do_init_server_poll_timeout(c);
-
+    msg(M_ERRNO, "[%s:%s:%d] mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
     /* finalize the TCP/UDP socket */
     if (c->mode == CM_P2P || c->mode == CM_TOP || c->mode == CM_CHILD_TCP)
     {
+        msg(M_ERRNO, "[%s:%s:%d] mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
         do_init_socket_2(c);
+        msg(M_ERRNO, "[%s:%s:%d] mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
     }
 
     /*
@@ -4429,7 +4454,7 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
         pf_init_context(c);
     }
 #endif
-
+    msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
     /* Check for signals */
     if (IS_SIG(c))
     {
@@ -4579,9 +4604,11 @@ inherit_context_child(struct context *dest,
 #endif
 
     /* context init */
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     init_instance(dest, src->c2.es, CC_NO_CLOSE | CC_USR1_TO_HUP);
     if (IS_SIG(dest))
     {
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         return;
     }
 
@@ -4604,6 +4631,7 @@ inherit_context_child(struct context *dest,
         dest->c2.link_socket_info->lsa = &dest->c1.link_socket_addr;
         dest->c2.link_socket_info->connection_established = false;
     }
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
 }
 
 void

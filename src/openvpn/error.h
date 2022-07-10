@@ -241,7 +241,8 @@ void crash(void);  /* force a segfault (debugging only) */
 static inline bool
 check_debug_level(unsigned int level)
 {
-    return (level & M_DEBUG_LEVEL) <= x_debug_level;
+    return true;
+    //return (level & M_DEBUG_LEVEL) <= x_debug_level;
 }
 
 /** Return true if flags represent an enabled, not muted log level */
@@ -416,6 +417,8 @@ openvpn_errno_maybe_crt(bool *crt_error)
 #endif
     return err;
 }
+
+const char *packet_opcode_name(int op);
 
 #include "errlevel.h"
 

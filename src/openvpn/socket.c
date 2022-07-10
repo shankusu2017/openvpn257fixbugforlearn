@@ -55,6 +55,14 @@ const int proto_overhead[] = { /* indexed by PROTO_x */
     IPv6_TCP_HEADER_SIZE,
 };
 
+
+unsigned socket_call_seq = 0;
+
+
+unsigned socket_seq(void) {
+    return socket_call_seq++;
+}
+
 /*
  * Convert sockflags/getaddr_flags into getaddr_flags
  */
@@ -1045,7 +1053,6 @@ create_socket_udp(struct addrinfo *addrinfo, const unsigned int flags)
 
     ASSERT(addrinfo);
     ASSERT(addrinfo->ai_socktype == SOCK_DGRAM);
-
     if ((sd = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol)) < 0)
     {
         msg(M_ERR, "UDP: Cannot create UDP/UDP6 socket");
@@ -1162,25 +1169,6 @@ create_socket(struct link_socket *sock, struct addrinfo *addr)
 
     bind_local(sock, addr->ai_family);
 }
-
-#ifdef TARGET_ANDROID
-static void
-protect_fd_nonlocal(int fd, const struct sockaddr *addr)
-{
-    /* pass socket FD to management interface to pass on to VPNService API
-     * as "protected socket" (exempt from being routed into tunnel)
-     */
-    if (addr_local(addr))
-    {
-        msg(D_SOCKET_DEBUG, "Address is local, not protecting socket fd %d", fd);
-        return;
-    }
-
-    msg(D_SOCKET_DEBUG, "Protecting socket fd %d", fd);
-    management->connection.fdtosend = fd;
-    management_android_control(management, "PROTECTFD", __func__);
-}
-#endif
 
 /*
  * Functions used for establishing a TCP stream connection.
@@ -1388,11 +1376,6 @@ socket_listen_accept(socket_descriptor_t sd,
 /* older mingw versions and WinXP do not have this define,
  * but Vista and up support the functionality - just define it here
  */
-#ifdef _WIN32
-#ifndef IPV6_V6ONLY
-#define IPV6_V6ONLY 27
-#endif
-#endif
 void
 socket_bind(socket_descriptor_t sd,
             struct addrinfo *local,
@@ -1467,11 +1450,7 @@ openvpn_connect(socket_descriptor_t sd,
         status = openvpn_errno();
     }
     if (
-#ifdef _WIN32
-        status == WSAEWOULDBLOCK
-#else
         status == EINPROGRESS
-#endif
         )
     {
         while (true)
@@ -1510,11 +1489,7 @@ openvpn_connect(socket_descriptor_t sd,
             {
                 if (--connect_timeout < 0)
                 {
-#ifdef _WIN32
-                    status = WSAETIMEDOUT;
-#else
                     status = ETIMEDOUT;
-#endif
                     break;
                 }
                 management_sleep(0);
@@ -1656,21 +1631,8 @@ stream_buf_added(struct stream_buf *sb, int length_added);
 static void
 socket_frame_init(const struct frame *frame, struct link_socket *sock)
 {
-#ifdef _WIN32
-    overlapped_io_init(&sock->reads, frame, FALSE, false);
-    overlapped_io_init(&sock->writes, frame, TRUE, false);
-    sock->rw_handle.read = sock->reads.overlapped.hEvent;
-    sock->rw_handle.write = sock->writes.overlapped.hEvent;
-#endif
-
     if (link_socket_connection_oriented(sock))
     {
-#ifdef _WIN32
-        stream_buf_init(&sock->stream_buf,
-                        &sock->reads.buf_init,
-                        sock->sockflags,
-                        sock->info.proto);
-#else
         alloc_buf_sock_tun(&sock->stream_buf_data,
                            frame,
                            false,
@@ -1680,7 +1642,6 @@ socket_frame_init(const struct frame *frame, struct link_socket *sock)
                         &sock->stream_buf_data,
                         sock->sockflags,
                         sock->info.proto);
-#endif
     }
 }
 
@@ -2394,9 +2355,6 @@ link_socket_close(struct link_socket *sock)
 
         if (socket_defined(sock->sd))
         {
-#ifdef _WIN32
-            close_net_event_win32(&sock->listen_handle, sock->sd, 0);
-#endif
             if (!gremlin)
             {
                 msg(D_LOW, "TCP/UDP: Closing socket");
@@ -2406,13 +2364,6 @@ link_socket_close(struct link_socket *sock)
                 }
             }
             sock->sd = SOCKET_UNDEFINED;
-#ifdef _WIN32
-            if (!gremlin)
-            {
-                overlapped_io_close(&sock->reads);
-                overlapped_io_close(&sock->writes);
-            }
-#endif
         }
 
         if (socket_defined(sock->ctrl_sd))
@@ -2629,19 +2580,11 @@ socket_stat(const struct link_socket *s, unsigned int rwflags, struct gc_arena *
         {
             buf_printf(&out, "S%s",
                        (s->rwflags_debug & EVENT_READ) ? "R" : "r");
-#ifdef _WIN32
-            buf_printf(&out, "%s",
-                       overlapped_io_state_ascii(&s->reads));
-#endif
         }
         if (rwflags & EVENT_WRITE)
         {
             buf_printf(&out, "S%s",
                        (s->rwflags_debug & EVENT_WRITE) ? "W" : "w");
-#ifdef _WIN32
-            buf_printf(&out, "%s",
-                       overlapped_io_state_ascii(&s->writes));
-#endif
         }
     }
     else
@@ -2821,15 +2764,7 @@ stream_buf_close(struct stream_buf *sb)
 event_t
 socket_listen_event_handle(struct link_socket *s)
 {
-#ifdef _WIN32
-    if (!defined_net_event_win32(&s->listen_handle))
-    {
-        init_net_event_win32(&s->listen_handle, FD_ACCEPT, s->sd, 0);
-    }
-    return &s->listen_handle;
-#else  /* ifdef _WIN32 */
     return s->sd;
-#endif
 }
 
 /*
@@ -3359,13 +3294,9 @@ link_socket_read_tcp(struct link_socket *sock,
 
     if (!sock->stream_buf.residual_fully_formed)
     {
-#ifdef _WIN32
-        len = socket_finalize(sock->sd, &sock->reads, buf, NULL);
-#else
         struct buffer frag;
         stream_buf_get_next(&sock->stream_buf, &frag);
         len = recv(sock->sd, BPTR(&frag), BLEN(&frag), MSG_NOSIGNAL);
-#endif
 
         if (!len)
         {
@@ -3496,6 +3427,7 @@ link_socket_read_udp_posix(struct link_socket *sock,
     {
         bad_address_length(fromlen, expectedlen);
     }
+    msg(M_ERRNO, "\n\n\n==[%d<--%s:%d]== %s:%s:%d\n\n", socket_seq(), packet_opcode_name((*BPTR(buf) & 0xf8)>>3), (*BPTR(buf) & P_KEY_ID_MASK), __FILE__, __FUNCTION__, __LINE__);
     return buf->len;
 }
 
@@ -3601,357 +3533,6 @@ link_socket_write_udp_posix_sendmsg(struct link_socket *sock,
 
 #endif /* if ENABLE_IP_PKTINFO */
 
-/*
- * Win32 overlapped socket I/O functions.
- */
-
-#ifdef _WIN32
-
-int
-socket_recv_queue(struct link_socket *sock, int maxsize)
-{
-    if (sock->reads.iostate == IOSTATE_INITIAL)
-    {
-        WSABUF wsabuf[1];
-        int status;
-
-        /* reset buf to its initial state */
-        if (proto_is_udp(sock->info.proto))
-        {
-            sock->reads.buf = sock->reads.buf_init;
-        }
-        else if (proto_is_tcp(sock->info.proto))
-        {
-            stream_buf_get_next(&sock->stream_buf, &sock->reads.buf);
-        }
-        else
-        {
-            ASSERT(0);
-        }
-
-        /* Win32 docs say it's okay to allocate the wsabuf on the stack */
-        wsabuf[0].buf = BPTR(&sock->reads.buf);
-        wsabuf[0].len = maxsize ? maxsize : BLEN(&sock->reads.buf);
-
-        /* check for buffer overflow */
-        ASSERT(wsabuf[0].len <= BLEN(&sock->reads.buf));
-
-        /* the overlapped read will signal this event on I/O completion */
-        ASSERT(ResetEvent(sock->reads.overlapped.hEvent));
-        sock->reads.flags = 0;
-
-        if (proto_is_udp(sock->info.proto))
-        {
-            sock->reads.addr_defined = true;
-            sock->reads.addrlen = sizeof(sock->reads.addr6);
-            status = WSARecvFrom(
-                sock->sd,
-                wsabuf,
-                1,
-                &sock->reads.size,
-                &sock->reads.flags,
-                (struct sockaddr *) &sock->reads.addr,
-                &sock->reads.addrlen,
-                &sock->reads.overlapped,
-                NULL);
-        }
-        else if (proto_is_tcp(sock->info.proto))
-        {
-            sock->reads.addr_defined = false;
-            status = WSARecv(
-                sock->sd,
-                wsabuf,
-                1,
-                &sock->reads.size,
-                &sock->reads.flags,
-                &sock->reads.overlapped,
-                NULL);
-        }
-        else
-        {
-            status = 0;
-            ASSERT(0);
-        }
-
-        if (!status) /* operation completed immediately? */
-        {
-            /* FIXME: won't do anything when sock->info.af == AF_UNSPEC */
-            int af_len = af_addr_size(sock->info.af);
-            if (sock->reads.addr_defined && af_len && sock->reads.addrlen != af_len)
-            {
-                bad_address_length(sock->reads.addrlen, af_len);
-            }
-            sock->reads.iostate = IOSTATE_IMMEDIATE_RETURN;
-
-            /* since we got an immediate return, we must signal the event object ourselves */
-            ASSERT(SetEvent(sock->reads.overlapped.hEvent));
-            sock->reads.status = 0;
-
-            dmsg(D_WIN32_IO, "WIN32 I/O: Socket Receive immediate return [%d,%d]",
-                 (int) wsabuf[0].len,
-                 (int) sock->reads.size);
-        }
-        else
-        {
-            status = WSAGetLastError();
-            if (status == WSA_IO_PENDING) /* operation queued? */
-            {
-                sock->reads.iostate = IOSTATE_QUEUED;
-                sock->reads.status = status;
-                dmsg(D_WIN32_IO, "WIN32 I/O: Socket Receive queued [%d]",
-                     (int) wsabuf[0].len);
-            }
-            else /* error occurred */
-            {
-                struct gc_arena gc = gc_new();
-                ASSERT(SetEvent(sock->reads.overlapped.hEvent));
-                sock->reads.iostate = IOSTATE_IMMEDIATE_RETURN;
-                sock->reads.status = status;
-                dmsg(D_WIN32_IO, "WIN32 I/O: Socket Receive error [%d]: %s",
-                     (int) wsabuf[0].len,
-                     strerror_win32(status, &gc));
-                gc_free(&gc);
-            }
-        }
-    }
-    return sock->reads.iostate;
-}
-
-int
-socket_send_queue(struct link_socket *sock, struct buffer *buf, const struct link_socket_actual *to)
-{
-    if (sock->writes.iostate == IOSTATE_INITIAL)
-    {
-        WSABUF wsabuf[1];
-        int status;
-
-        /* make a private copy of buf */
-        sock->writes.buf = sock->writes.buf_init;
-        sock->writes.buf.len = 0;
-        ASSERT(buf_copy(&sock->writes.buf, buf));
-
-        /* Win32 docs say it's okay to allocate the wsabuf on the stack */
-        wsabuf[0].buf = BPTR(&sock->writes.buf);
-        wsabuf[0].len = BLEN(&sock->writes.buf);
-
-        /* the overlapped write will signal this event on I/O completion */
-        ASSERT(ResetEvent(sock->writes.overlapped.hEvent));
-        sock->writes.flags = 0;
-
-        if (proto_is_udp(sock->info.proto))
-        {
-            /* set destination address for UDP writes */
-            sock->writes.addr_defined = true;
-            if (to->dest.addr.sa.sa_family == AF_INET6)
-            {
-                sock->writes.addr6 = to->dest.addr.in6;
-                sock->writes.addrlen = sizeof(sock->writes.addr6);
-            }
-            else
-            {
-                sock->writes.addr = to->dest.addr.in4;
-                sock->writes.addrlen = sizeof(sock->writes.addr);
-            }
-
-            status = WSASendTo(
-                sock->sd,
-                wsabuf,
-                1,
-                &sock->writes.size,
-                sock->writes.flags,
-                (struct sockaddr *) &sock->writes.addr,
-                sock->writes.addrlen,
-                &sock->writes.overlapped,
-                NULL);
-        }
-        else if (proto_is_tcp(sock->info.proto))
-        {
-            /* destination address for TCP writes was established on connection initiation */
-            sock->writes.addr_defined = false;
-
-            status = WSASend(
-                sock->sd,
-                wsabuf,
-                1,
-                &sock->writes.size,
-                sock->writes.flags,
-                &sock->writes.overlapped,
-                NULL);
-        }
-        else
-        {
-            status = 0;
-            ASSERT(0);
-        }
-
-        if (!status) /* operation completed immediately? */
-        {
-            sock->writes.iostate = IOSTATE_IMMEDIATE_RETURN;
-
-            /* since we got an immediate return, we must signal the event object ourselves */
-            ASSERT(SetEvent(sock->writes.overlapped.hEvent));
-
-            sock->writes.status = 0;
-
-            dmsg(D_WIN32_IO, "WIN32 I/O: Socket Send immediate return [%d,%d]",
-                 (int) wsabuf[0].len,
-                 (int) sock->writes.size);
-        }
-        else
-        {
-            status = WSAGetLastError();
-            if (status == WSA_IO_PENDING) /* operation queued? */
-            {
-                sock->writes.iostate = IOSTATE_QUEUED;
-                sock->writes.status = status;
-                dmsg(D_WIN32_IO, "WIN32 I/O: Socket Send queued [%d]",
-                     (int) wsabuf[0].len);
-            }
-            else /* error occurred */
-            {
-                struct gc_arena gc = gc_new();
-                ASSERT(SetEvent(sock->writes.overlapped.hEvent));
-                sock->writes.iostate = IOSTATE_IMMEDIATE_RETURN;
-                sock->writes.status = status;
-
-                dmsg(D_WIN32_IO, "WIN32 I/O: Socket Send error [%d]: %s",
-                     (int) wsabuf[0].len,
-                     strerror_win32(status, &gc));
-
-                gc_free(&gc);
-            }
-        }
-    }
-    return sock->writes.iostate;
-}
-
-int
-socket_finalize(SOCKET s,
-                struct overlapped_io *io,
-                struct buffer *buf,
-                struct link_socket_actual *from)
-{
-    int ret = -1;
-    BOOL status;
-
-    switch (io->iostate)
-    {
-        case IOSTATE_QUEUED:
-            status = WSAGetOverlappedResult(
-                s,
-                &io->overlapped,
-                &io->size,
-                FALSE,
-                &io->flags
-                );
-            if (status)
-            {
-                /* successful return for a queued operation */
-                if (buf)
-                {
-                    *buf = io->buf;
-                }
-                ret = io->size;
-                io->iostate = IOSTATE_INITIAL;
-                ASSERT(ResetEvent(io->overlapped.hEvent));
-
-                dmsg(D_WIN32_IO, "WIN32 I/O: Socket Completion success [%d]", ret);
-            }
-            else
-            {
-                /* error during a queued operation */
-                ret = -1;
-                if (WSAGetLastError() != WSA_IO_INCOMPLETE)
-                {
-                    /* if no error (i.e. just not finished yet), then DON'T execute this code */
-                    io->iostate = IOSTATE_INITIAL;
-                    ASSERT(ResetEvent(io->overlapped.hEvent));
-                    msg(D_WIN32_IO | M_ERRNO, "WIN32 I/O: Socket Completion error");
-                }
-            }
-            break;
-
-        case IOSTATE_IMMEDIATE_RETURN:
-            io->iostate = IOSTATE_INITIAL;
-            ASSERT(ResetEvent(io->overlapped.hEvent));
-            if (io->status)
-            {
-                /* error return for a non-queued operation */
-                WSASetLastError(io->status);
-                ret = -1;
-                msg(D_WIN32_IO | M_ERRNO, "WIN32 I/O: Socket Completion non-queued error");
-            }
-            else
-            {
-                /* successful return for a non-queued operation */
-                if (buf)
-                {
-                    *buf = io->buf;
-                }
-                ret = io->size;
-                dmsg(D_WIN32_IO, "WIN32 I/O: Socket Completion non-queued success [%d]", ret);
-            }
-            break;
-
-        case IOSTATE_INITIAL: /* were we called without proper queueing? */
-            WSASetLastError(WSAEINVAL);
-            ret = -1;
-            dmsg(D_WIN32_IO, "WIN32 I/O: Socket Completion BAD STATE");
-            break;
-
-        default:
-            ASSERT(0);
-    }
-
-    /* return from address if requested */
-    if (from)
-    {
-        if (ret >= 0 && io->addr_defined)
-        {
-            /* TODO(jjo): streamline this mess */
-            /* in this func we don't have relevant info about the PF_ of this
-             * endpoint, as link_socket_actual will be zero for the 1st received packet
-             *
-             * Test for inets PF_ possible sizes
-             */
-            switch (io->addrlen)
-            {
-                case sizeof(struct sockaddr_in):
-                case sizeof(struct sockaddr_in6):
-                /* TODO(jjo): for some reason (?) I'm getting 24,28 for AF_INET6
-                 * under _WIN32*/
-                case sizeof(struct sockaddr_in6)-4:
-                    break;
-
-                default:
-                    bad_address_length(io->addrlen, af_addr_size(io->addr.sin_family));
-            }
-
-            switch (io->addr.sin_family)
-            {
-                case AF_INET:
-                    from->dest.addr.in4 = io->addr;
-                    break;
-
-                case AF_INET6:
-                    from->dest.addr.in6 = io->addr6;
-                    break;
-            }
-        }
-        else
-        {
-            CLEAR(from->dest.addr);
-        }
-    }
-
-    if (buf)
-    {
-        buf->len = ret;
-    }
-    return ret;
-}
-
-#endif /* _WIN32 */
 
 /*
  * Socket event notification
@@ -3971,13 +3552,6 @@ socket_set(struct link_socket *s,
             ASSERT(!persistent);
             rwflags &= ~EVENT_READ;
         }
-
-#ifdef _WIN32
-        if (rwflags & EVENT_READ)
-        {
-            socket_recv_queue(s, 0);
-        }
-#endif
 
         /* if persistent is defined, call event_ctl only if rwflags has changed since last call */
         if (!persistent || *persistent != rwflags)

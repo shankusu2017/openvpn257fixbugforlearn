@@ -294,6 +294,7 @@ int_compare_function(const void *key1, const void *key2)
 void
 multi_init(struct multi_context *m, struct context *t, bool tcp_mode, int thread_mode)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     int dev = DEV_TYPE_UNDEF;
 
     msg(D_MULTI_LOW, "MULTI: multi_init called, r=%d v=%d",
@@ -781,7 +782,7 @@ multi_create_instance(struct multi_context *m, const struct mroute_addr *real)
         mi->real = *real;
         generate_prefix(mi);
     }
-
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     inherit_context_child(&mi->context, &m->top);
     if (IS_SIG(&mi->context))
     {

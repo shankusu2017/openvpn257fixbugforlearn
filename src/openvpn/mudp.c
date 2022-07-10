@@ -306,24 +306,25 @@ tunnel_server_udp_single_threaded(struct context *top)
     context_clear_2(top);
 
     /* initialize top-tunnel instance */
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     init_instance_handle_signals(top, top->es, CC_HARD_USR1_TO_HUP);
     if (IS_SIG(top))
     {
         return;
     }
-
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     /* initialize global multi_context object */
     multi_init(&multi, top, false, MC_SINGLE_THREADED);
-
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     /* initialize our cloned top object */
     multi_top_init(&multi, top);
-
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     /* initialize management interface */
     init_management_callback_multi(&multi);
 
     /* finished with initialization */
     initialization_sequence_completed(top, ISC_SERVER); /* --mode server --proto udp */
-
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
 #ifdef ENABLE_ASYNC_PUSH
     multi.top.c2.inotify_fd = inotify_init();
     if (multi.top.c2.inotify_fd < 0)
@@ -334,24 +335,26 @@ tunnel_server_udp_single_threaded(struct context *top)
 
     /* per-packet event loop */
     while (true)
-    {
+    {   
         perf_push(PERF_EVENT_LOOP);
-
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         /* set up and do the io_wait() */
         multi_get_timeout(&multi, &multi.top.c2.timeval);
         io_wait(&multi.top, p2mp_iow_flags(&multi));
         MULTI_CHECK_SIG(&multi);
-
+        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         /* check on status of coarse timers */
         multi_process_per_second_timers(&multi);
-
+         msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         /* timeout? */
         if (multi.top.c2.event_set_status == ES_TIMEOUT)
         {
+            msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
             multi_process_timeout(&multi, MPP_PRE_SELECT|MPP_CLOSE_ON_SIGNAL);
         }
         else
         {
+             msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
             /* process I/O */
             multi_process_io_udp(&multi);
             MULTI_CHECK_SIG(&multi);
