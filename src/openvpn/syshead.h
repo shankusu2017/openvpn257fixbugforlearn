@@ -36,14 +36,6 @@
 #define unlikely(x)    (x)
 #endif
 
-#ifdef _WIN32
-#include <windows.h>
-#include <winsock2.h>
-#include <tlhelp32.h>
-#define sleep(x) Sleep((x)*1000)
-#define random rand
-#define srandom srand
-#endif
 
 #ifdef _MSC_VER /* Visual Studio */
 #define __func__ __FUNCTION__
@@ -363,20 +355,6 @@
 
 #endif /* TARGET_DARWIN */
 
-#ifdef _WIN32
-/* Missing declarations for MinGW 32. */
-/* #if !defined(__MINGW64_VERSION_MAJOR) || __MINGW64_VERSION_MAJOR < 2 */
-typedef int MIB_TCP_STATE;
-/* #endif */
-#include <naptypes.h>
-#include <ntddndis.h>
-#include <iphlpapi.h>
-#include <wininet.h>
-#include <shellapi.h>
-/* The following two headers are needed of PF_INET6 */
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif
 
 #ifdef HAVE_SYS_MMAN_H
 #ifdef TARGET_DARWIN
@@ -475,11 +453,7 @@ typedef unsigned short sa_family_t;
 /*
  * Directory separation char
  */
-#ifdef _WIN32
-#define OS_SPECIFIC_DIRSEP '\\'
-#else
 #define OS_SPECIFIC_DIRSEP '/'
-#endif
 
 /*
  * Our socket descriptor type.

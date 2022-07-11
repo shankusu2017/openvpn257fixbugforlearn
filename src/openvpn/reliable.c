@@ -28,8 +28,6 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#elif defined(_MSC_VER)
-#include "config-msvc.h"
 #endif
 
 #include "syshead.h"
@@ -153,7 +151,19 @@ reliable_ack_acknowledge_packet_id(struct reliable_ack *ack, packet_id_type pid)
     return false;
 }
 
-/* read a packet ID acknowledgement record from buf into ack */
+/* read a packet ID acknowledgement record from buf into ack 
+ *
+ * [1-byte ack array len] [[4 bytes acked packet-id]] [8 bytes dest session-id ?] 
+ *
+ *  详细介绍如下：
+ * 
+ * [1-byte ack array len] - length of acks array, zero if array is empty
+ *
+ * [[4 bytes acked packet-id]] - packet-ids which have been received, may be omitted
+ *
+ * [8 bytes dest session-id] - must be omitted if ack array is empty
+ * 
+ */
 bool
 reliable_ack_read(struct reliable_ack *ack,
                   struct buffer *buf, const struct session_id *sid)
@@ -240,6 +250,9 @@ reliable_ack_write(struct reliable_ack *ack,
     {
         ASSERT(session_id_defined(sid));
         ASSERT(session_id_write(sid, &sub));
+    }
+    if (n)  // 将后面的id往前移
+    {
         for (i = 0, j = n; j < ack->len; )
         {
             ack->packet_id[i++] = ack->packet_id[j++];
@@ -550,7 +563,7 @@ reliable_can_send(const struct reliable *rel)
         if (e->active)
         {
             ++n_active;
-            if (now >= e->next_try)
+            if (now >= e->next_try)     // 要重发或者发送，但是时间到了，还没发，即将准备发
             {
                 ++n_current;
             }

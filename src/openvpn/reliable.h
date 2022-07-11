@@ -68,9 +68,11 @@ struct reliable_ack
  */
 struct reliable_entry
 {
-    bool active;
-    interval_t timeout;
+    bool active;        /* 是否有效 */
+
+    interval_t timeout; /* 触发下次重发的超时时间间隔，当前看到的是某一次不成功，则timeout *= 2 */
     time_t next_try;
+
     packet_id_type packet_id;
     int opcode;
     struct buffer buf;
@@ -82,11 +84,11 @@ struct reliable_entry
  */
 struct reliable
 {
-    int size;
+    int size;       /* 下面array的实际size? */
     interval_t initial_timeout;
     packet_id_type packet_id;
     int offset;
-    bool hold; /* don't xmit until reliable_schedule_now is called */
+    bool hold; /* don't xmit(提交) until reliable_schedule_now is called */
     struct reliable_entry array[RELIABLE_CAPACITY];
 };
 
