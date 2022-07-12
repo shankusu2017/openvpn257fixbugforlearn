@@ -3447,11 +3447,7 @@ link_socket_write_tcp(struct link_socket *sock,
     ASSERT(len <= sock->stream_buf.maxlen);
     len = htonps(len);
     ASSERT(buf_write_prepend(buf, &len, sizeof(len)));
-#ifdef _WIN32
-    return link_socket_write_win32(sock, buf, to);
-#else
     return link_socket_write_tcp_posix(sock, buf, to);
-#endif
 }
 
 #if ENABLE_IP_PKTINFO

@@ -91,6 +91,7 @@ void crypto_unload_provider(const char *provname, provider_t *provider)
 void
 crypto_init_lib(void)
 {
+
 }
 
 void

@@ -790,7 +790,6 @@ init_static(void)
     crypto_init_dmalloc();
 #endif
 
-
     /*
      * Initialize random number seed.  random() is only used
      * when "weak" random numbers are acceptable.
@@ -807,9 +806,6 @@ init_static(void)
     error_reset();              /* initialize error.c */
     reset_check_status();       /* initialize status check code in socket.c */
 
-#ifdef _WIN32
-    init_win32();
-#endif
 
 #ifdef OPENVPN_DEBUG_COMMAND_LINE
     {
@@ -1356,29 +1352,6 @@ format_common_name(struct context *c, struct gc_arena *gc)
 void
 pre_setup(const struct options *options)
 {
-#ifdef _WIN32
-    if (options->exit_event_name)
-    {
-        win32_signal_open(&win32_signal,
-                          WSO_FORCE_SERVICE,
-                          options->exit_event_name,
-                          options->exit_event_initial_state);
-    }
-    else
-    {
-        win32_signal_open(&win32_signal,
-                          WSO_FORCE_CONSOLE,
-                          NULL,
-                          false);
-
-        /* put a title on the top window bar */
-        if (win32_signal.mode == WSO_MODE_CONSOLE)
-        {
-            window_title_save(&window_title);
-            window_title_generate(options->config);
-        }
-    }
-#endif /* ifdef _WIN32 */
 }
 
 void

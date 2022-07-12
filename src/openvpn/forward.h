@@ -24,7 +24,7 @@
 
 /**
  * @file
- * Interface functions to the internal and external multiplexers.
+ * Interface functions to the internal and external multiplexers(多路复用).
  */
 
 
@@ -375,12 +375,7 @@ p2p_iow_flags(const struct context *c)
     {
         flags |= IOW_TO_TUN;
     }
-#ifdef _WIN32
-    if (tuntap_ring_empty(c->c1.tuntap))
-    {
-        flags &= ~IOW_READ_TUN;
-    }
-#endif
+
     return flags;
 }
 

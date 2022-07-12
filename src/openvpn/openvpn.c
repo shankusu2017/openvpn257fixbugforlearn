@@ -171,9 +171,6 @@ openvpn_main(int argc, char *argv[])
     return 1;
 #endif
 
-#ifdef _WIN32
-    SetConsoleOutputCP(CP_UTF8);
-#endif
 
     CLEAR(c);
 
@@ -205,9 +202,6 @@ openvpn_main(int argc, char *argv[])
 
             /* initialize environmental variable store */
             c.es = env_set_create(NULL);
-#ifdef _WIN32
-            set_win_sys_path_via_env(c.es);
-#endif
 
 #ifdef ENABLE_MANAGEMENT
             /* initialize management subsystem */
@@ -260,9 +254,7 @@ openvpn_main(int argc, char *argv[])
 
             /* print version number */
             msg(M_INFO, "%s", title_string);
-#ifdef _WIN32
-            show_windows_version(M_INFO);
-#endif
+
             show_library_versions(M_INFO);
 
             /* misc stuff */
@@ -361,40 +353,8 @@ openvpn_main(int argc, char *argv[])
     return 0;                               /* NOTREACHED */
 }
 
-#ifdef _WIN32
-int
-wmain(int argc, wchar_t *wargv[])
-{
-    char **argv;
-    int ret;
-    int i;
-
-    if ((argv = calloc(argc+1, sizeof(char *))) == NULL)
-    {
-        return 1;
-    }
-
-    for (i = 0; i < argc; i++)
-    {
-        int n = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, NULL, 0, NULL, NULL);
-        argv[i] = malloc(n);
-        WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, argv[i], n, NULL, NULL);
-    }
-
-    ret = openvpn_main(argc, argv);
-
-    for (i = 0; i < argc; i++)
-    {
-        free(argv[i]);
-    }
-    free(argv);
-
-    return ret;
-}
-#else  /* ifdef _WIN32 */
 int
 main(int argc, char *argv[])
 {
     return openvpn_main(argc, argv);
 }
-#endif /* ifdef _WIN32 */

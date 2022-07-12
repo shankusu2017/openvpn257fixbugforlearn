@@ -314,16 +314,6 @@ print_status(const struct context *c, struct status_output *so)
     status_printf(so, "Pre-encrypt truncations," counter_format, c->c2.n_trunc_pre_encrypt);
     status_printf(so, "Post-decrypt truncations," counter_format, c->c2.n_trunc_post_decrypt);
 #endif
-#ifdef _WIN32
-    if (tuntap_defined(c->c1.tuntap))
-    {
-        const char *extended_msg = tap_win_getinfo(c->c1.tuntap, &gc);
-        if (extended_msg)
-        {
-            status_printf(so, "TAP-WIN32 driver status,\"%s\"", extended_msg);
-        }
-    }
-#endif
 
     status_printf(so, "END");
     status_flush(so);

@@ -172,13 +172,6 @@ struct link_socket
     socket_descriptor_t sd;
     socket_descriptor_t ctrl_sd; /* only used for UDP over Socks */
 
-#ifdef _WIN32
-    struct overlapped_io reads;
-    struct overlapped_io writes;
-    struct rw_handle rw_handle;
-    struct rw_handle listen_handle; /* For listening on TCP socket in server mode */
-#endif
-
     /* used for printing status info only */
     unsigned int rwflags_debug;
 

@@ -29,11 +29,7 @@
  */
 #ifdef USE_64_BIT_COUNTERS
 typedef unsigned long long int counter_type;
-#ifdef _WIN32
-#define counter_format  "%I64u"
-#else
 #define counter_format  "%llu"
-#endif
 #else  /* ifdef USE_64_BIT_COUNTERS */
 typedef unsigned int counter_type;
 #define counter_format   "%u"
@@ -52,20 +48,13 @@ typedef int interval_t;
 /*
  * Printf formats for special types
  */
-#ifdef _WIN64
-#define ptr_format              "0x%I64x"
-#else
 #define ptr_format              "0x%08lx"
-#endif
 #define fragment_header_format  "0x%08x"
 
 /* these are used to cast the arguments
  * and MUST match the formats above */
-#ifdef _WIN64
-typedef unsigned long long ptr_type;
-#else
 typedef unsigned long ptr_type;
-#endif
+
 
 /* the --client-config-dir default file */
 #define CCD_DEFAULT "DEFAULT"

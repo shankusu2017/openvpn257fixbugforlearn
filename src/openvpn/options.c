@@ -835,18 +835,6 @@ init_options(struct options *o, const bool init_gc)
 #ifdef ENABLE_FEATURE_TUN_PERSIST
     o->persist_mode = 1;
 #endif
-#ifdef _WIN32
-#if 0
-    o->tuntap_options.ip_win32_type = IPW32_SET_ADAPTIVE;
-#else
-    o->tuntap_options.ip_win32_type = IPW32_SET_DHCP_MASQ;
-#endif
-    o->tuntap_options.dhcp_lease_time = 31536000; /* one year */
-    o->tuntap_options.dhcp_masq_offset = 0;     /* use network address as internal DHCP server address */
-    o->route_method = ROUTE_METHOD_ADAPTIVE;
-    o->block_outside_dns = false;
-    o->windows_driver = WINDOWS_DRIVER_TAP_WINDOWS6;
-#endif
     o->vlan_accept = VLAN_ALL;
     o->vlan_pvid = 1;
     o->real_hash_size = 256;
@@ -891,17 +879,13 @@ init_options(struct options *o, const bool init_gc)
     o->auth_token_generate = false;
 
     /* Set default --tmp-dir */
-#ifdef _WIN32
-    /* On Windows, find temp dir via environment variables */
-    o->tmp_dir = win_get_tempdir();
-#else
+
     /* Non-windows platforms use $TMPDIR, and if not set, default to '/tmp' */
     o->tmp_dir = getenv("TMPDIR");
     if (!o->tmp_dir)
     {
         o->tmp_dir = "/tmp";
     }
-#endif /* _WIN32 */
     o->allow_recursive_routing = false;
 }
 
@@ -4358,16 +4342,6 @@ usage_small(void)
     openvpn_exit(OPENVPN_EXIT_STATUS_USAGE); /* exit point */
 }
 
-#ifdef _WIN32
-void
-show_windows_version(const unsigned int flags)
-{
-    struct gc_arena gc = gc_new();
-    msg(flags, "Windows version %s", win32_version_string(&gc, true));
-    gc_free(&gc);
-}
-#endif
-
 void
 show_library_versions(const unsigned int flags)
 {
@@ -6719,10 +6693,6 @@ add_option(struct options *options,
                 goto err;
             }
         }
-#ifdef _WIN32
-        /* we need this here to handle pushed --redirect-gateway */
-        remap_redirect_gateway_flags(options);
-#endif
     }
     else if (streq(p[0], "block-ipv6") && !p[1])
     {

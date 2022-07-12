@@ -1814,17 +1814,6 @@ pre_select(struct context *c)
     c->c2.timeval.tv_sec = BIG_TIMEOUT;
     c->c2.timeval.tv_usec = 0;
 
-#if defined(_WIN32)
-    if (check_debug_level(D_TAP_WIN_DEBUG))
-    {
-        c->c2.timeval.tv_sec = 1;
-        if (tuntap_defined(c->c1.tuntap))
-        {
-            tun_show_debug(c->c1.tuntap);
-        }
-    }
-#endif
-
     /* check coarse timers? */
     check_coarse_timers(c);
     if (c->sig->signal_received)

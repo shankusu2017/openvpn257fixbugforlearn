@@ -3073,8 +3073,7 @@ tls_multi_process(struct tls_multi *multi,
             struct link_socket_actual *tla = NULL;
             update_time();
             msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
-            if (tls_process(multi, session, to_link, &tla,
-                            to_link_socket_info, wakeup))
+            if (tls_process(multi, session, to_link, &tla, to_link_socket_info, wakeup))
             {
                 active = TLSMP_ACTIVE;
             }
