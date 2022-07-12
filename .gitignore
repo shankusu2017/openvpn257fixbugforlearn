@@ -1,0 +1,9 @@
+*.a
+*.o
+*.Pro
+*.Po
+*.lo
+*.Plo
+*.a
+./plugins/libs/*
+Makefile
