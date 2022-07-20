@@ -13,7 +13,7 @@
 *.vcproj.*
 *.vcxproj.user
 *.sln.cache
-*.log
+
 Release
 Debug
 Win32-Output
