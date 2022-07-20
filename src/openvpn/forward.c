@@ -141,15 +141,17 @@ context_reschedule_sec(struct context *c, int sec)
 void
 check_tls(struct context *c)
 {
+    msg(M_ERRNO, "[== %s:%s:%d ==] check_tls.start buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+
     interval_t wakeup = BIG_TIMEOUT;
 
     if (interval_test(&c->c2.tmp_int))
     {
-        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
-        const int tmp_status = tls_multi_process
-                                   (c->c2.tls_multi, &c->c2.to_link, &c->c2.to_link_addr,
+        msg(M_ERRNO, "[== %s:%s:%d ==] check_tls.tls_multi_process.start buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+        const int tmp_status = tls_multi_process(
+                                    c->c2.tls_multi, &c->c2.to_link, &c->c2.to_link_addr,
                                    get_link_socket_info(c), &wakeup);
-        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+        msg(M_ERRNO, "[== %s:%s:%d ==] check_tls.tls_multi_process.done buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         if (tmp_status == TLSMP_ACTIVE)
         {
             update_time();
@@ -799,6 +801,7 @@ link_socket_write_post_size_adjust(int *size,
 void
 read_incoming_link(struct context *c)
 {
+    msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
     /*
      * Set up for recvfrom call to read datagram
      * sent to our TCP/UDP port.
@@ -865,6 +868,8 @@ read_incoming_link(struct context *c)
 bool
 process_incoming_link_part1(struct context *c, struct link_socket_info *lsi, bool floated)
 {
+    msg(M_ERRNO, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
+
     struct gc_arena gc = gc_new();
     bool decrypt_status = false;
 
@@ -951,6 +956,7 @@ process_incoming_link_part1(struct context *c, struct link_socket_info *lsi, boo
             if (tls_pre_decrypt(c->c2.tls_multi, &c->c2.from, &c->c2.buf, &co,
                                 floated, &ad_start))
             {
+                msg(M_ERRNO, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
                 /* Restore pre-NCP frame parameters */
                 if (is_hard_reset_method2(opcode))
                 {
@@ -988,6 +994,7 @@ process_incoming_link_part1(struct context *c, struct link_socket_info *lsi, boo
         decrypt_status = openvpn_decrypt(&c->c2.buf, c->c2.buffers->decrypt_buf,
                                          co, &c->c2.frame, ad_start);
 
+        // connection_oriented : 面向链接的
         if (!decrypt_status && link_socket_connection_oriented(c->c2.link_socket))
         {
             /* decryption errors are fatal in TCP mode */
@@ -1007,6 +1014,8 @@ process_incoming_link_part1(struct context *c, struct link_socket_info *lsi, boo
 void
 process_incoming_link_part2(struct context *c, struct link_socket_info *lsi, const uint8_t *orig_buf)
 {
+    msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
+
     if (c->c2.buf.len > 0)
     {
 #ifdef ENABLE_FRAGMENT
@@ -1090,13 +1099,17 @@ process_incoming_link_part2(struct context *c, struct link_socket_info *lsi, con
 static void
 process_incoming_link(struct context *c)
 {
+    msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
     perf_push(PERF_PROC_IN_LINK);
 
     struct link_socket_info *lsi = get_link_socket_info(c);
     const uint8_t *orig_buf = c->c2.buf.data;
 
     process_incoming_link_part1(c, lsi, false);
+    msg(M_DEBUG, "[== %s:%s:%d ==] process_incoming_link_part1.done", __FILE__, __FUNCTION__, __LINE__);
+    msg(M_DEBUG, "[== %s:%s:%d ==] process_incoming_link_part2.start", __FILE__, __FUNCTION__, __LINE__);
     process_incoming_link_part2(c, lsi, orig_buf);
+    msg(M_DEBUG, "[== %s:%s:%d ==] done", __FILE__, __FUNCTION__, __LINE__);
 
     perf_pop();
 }
@@ -1801,6 +1814,7 @@ process_outgoing_tun(struct context *c)
     gc_free(&gc);
 }
 
+/* deal with timer and tls */
 void
 pre_select(struct context *c)
 {
@@ -1820,10 +1834,11 @@ pre_select(struct context *c)
     {
         return;
     }
-    msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+
     /* If tls is enabled, do tls control channel packet processing. */
     if (c->c2.tls_multi)
     {
+        msg(M_ERRNO, "[== %s:%s:%d ==] check_tls.start buf.len: %d", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         check_tls(c);
     }
     msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
@@ -2064,9 +2079,13 @@ io_wait_dowork(struct context *c, const unsigned int flags)
     dmsg(D_EVENT_WAIT, "I/O WAIT status=0x%04x", c->c2.event_set_status);
 }
 
+/*
+ * 处理各种io事件(应该也包含定时器事件)
+ */
 void
 process_io(struct context *c)
 {
+    msg(M_DEBUG, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
     const unsigned int status = c->c2.event_set_status;
 
 #ifdef ENABLE_MANAGEMENT
@@ -2080,14 +2099,16 @@ process_io(struct context *c)
     /* TCP/UDP port ready to accept write */
     if (status & SOCKET_WRITE)
     {
-        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
+        msg(M_DEBUG, "[== %s:%s:%d ==] precess_outgoing_link.start", __FILE__, __FUNCTION__, __LINE__);
         process_outgoing_link(c);
-        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
+        msg(M_DEBUG, "[== %s:%s:%d ==] precess_outgoing_link.done", __FILE__, __FUNCTION__, __LINE__);
     }
     /* TUN device ready to accept write */
     else if (status & TUN_WRITE)
     {
+        msg(M_DEBUG, "[== %s:%s:%d ==] precess_outgoing_tun.start", __FILE__, __FUNCTION__, __LINE__);
         process_outgoing_tun(c);
+        msg(M_DEBUG, "[== %s:%s:%d ==] precess_outgoing_tun.done", __FILE__, __FUNCTION__, __LINE__);
     }
     /* Incoming data on TCP/UDP port */
     else if (status & SOCKET_READ)
@@ -2095,7 +2116,9 @@ process_io(struct context *c)
         read_incoming_link(c);
         if (!IS_SIG(c))
         {
+            msg(M_DEBUG, "[== %s:%s:%d ==] process_incoming_link.start", __FILE__, __FUNCTION__, __LINE__);
             process_incoming_link(c);
+            msg(M_DEBUG, "[== %s:%s:%d ==] process_incoming_link.done", __FILE__, __FUNCTION__, __LINE__);
         }
     }
     /* Incoming data on TUN device */

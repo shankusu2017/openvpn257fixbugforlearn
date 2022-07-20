@@ -51,6 +51,8 @@
 int
 verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
+    
     int ret = 0;
     struct tls_session *session;
     SSL *ssl;

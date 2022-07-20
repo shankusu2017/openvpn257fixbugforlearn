@@ -462,6 +462,8 @@ multi_tcp_wait_lite(struct multi_context *m, struct multi_instance *mi, const in
 static struct multi_instance *
 multi_tcp_dispatch(struct multi_context *m, struct multi_instance *mi, const int action)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
+    
     const unsigned int mpp_flags = MPP_PRE_SELECT|MPP_RECORD_TOUCH;
     struct multi_instance *touched = mi;
     m->mpp_touched = &touched;

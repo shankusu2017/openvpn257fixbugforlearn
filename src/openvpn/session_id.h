@@ -54,6 +54,7 @@ session_id_equal(const struct session_id *sid1,
 static inline bool
 session_id_defined(const struct session_id *sid1)
 {
+    /* 简单的和ZERO比较 */
     return memcmp(sid1->id, &x_session_id_zero.id, SID_SIZE) != 0;
 }
 

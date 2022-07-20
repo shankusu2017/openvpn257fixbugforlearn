@@ -169,6 +169,7 @@ openvpn_encrypt_v1(struct buffer *buf, struct buffer work,
         /* Do Encrypt from buf -> work */
         if (ctx->cipher)
         {
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             uint8_t iv_buf[OPENVPN_MAX_IV_LENGTH] = {0};
             const int iv_size = cipher_ctx_iv_length(ctx->cipher);
             const cipher_kt_t *cipher_kt = cipher_ctx_get_cipher_kt(ctx->cipher);
@@ -181,9 +182,10 @@ openvpn_encrypt_v1(struct buffer *buf, struct buffer work,
                 ASSERT(mac_out);
                 hmac_start = BEND(&work);
             }
-
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             if (cipher_kt_mode_cbc(cipher_kt))
             {
+                 msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
                 /* generate pseudo-random IV */
                 prng_bytes(iv_buf, iv_size);
 
@@ -196,14 +198,16 @@ openvpn_encrypt_v1(struct buffer *buf, struct buffer work,
                     msg(D_CRYPT_ERRORS, "ENCRYPT ERROR: packet ID roll over");
                     goto err;
                 }
+                 msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             }
             else if (cipher_kt_mode_ofb_cfb(cipher_kt))
             {
+                msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
                 struct buffer b;
 
                 /* packet-ID required for this mode. */
                 ASSERT(packet_id_initialized(&opt->packet_id));
-
+                 msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
                 buf_set_write(&b, iv_buf, iv_size);
                 ASSERT(packet_id_write(&opt->packet_id.send, &b, true, false));
             }
@@ -235,54 +239,62 @@ openvpn_encrypt_v1(struct buffer *buf, struct buffer work,
                     cipher_ctx_block_size(ctx->cipher));
                 goto err;
             }
-
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             /* Encrypt packet ID, payload */
             ASSERT(cipher_ctx_update(ctx->cipher, BEND(&work), &outlen, BPTR(buf), BLEN(buf)));
             ASSERT(buf_inc_len(&work, outlen));
-
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             /* Flush the encryption buffer */
             ASSERT(cipher_ctx_final(ctx->cipher, BEND(&work), &outlen));
             ASSERT(buf_inc_len(&work, outlen));
-
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             /* For all CBC mode ciphers, check the last block is complete */
             ASSERT(cipher_kt_mode(cipher_kt) != OPENVPN_MODE_CBC
                    || outlen == iv_size);
         }
         else                            /* No Encryption */
         {
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             if (packet_id_initialized(&opt->packet_id)
                 && !packet_id_write(&opt->packet_id.send, buf,
                                     opt->flags & CO_PACKET_ID_LONG_FORM, true))
             {
+                 msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
                 msg(D_CRYPT_ERRORS, "ENCRYPT ERROR: packet ID roll over");
                 goto err;
             }
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             if (ctx->hmac)
             {
                 hmac_start = BPTR(buf);
                 ASSERT(mac_out = buf_prepend(buf, hmac_ctx_size(ctx->hmac)));
             }
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             if (BLEN(&work))
             {
                 buf_write_prepend(buf, BPTR(&work), BLEN(&work));
             }
+             msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             work = *buf;
         }
-
+         msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
         /* HMAC the ciphertext (or plaintext if !cipher) */
         if (ctx->hmac)
         {
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d, hmac.context.offset:%p, len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), hmac_start - work.data, BEND(&work) - hmac_start, buffer_hex_out(buf));
             hmac_ctx_reset(ctx->hmac);
             hmac_ctx_update(ctx->hmac, hmac_start, BEND(&work) - hmac_start);
             hmac_ctx_final(ctx->hmac, mac_out);
-            dmsg(D_PACKET_CONTENT, "ENCRYPT HMAC: %s",
-                 format_hex(mac_out, hmac_ctx_size(ctx->hmac), 80, &gc));
+            dmsg(D_PACKET_CONTENT, "ENCRYPT HMAC: %s",format_hex(mac_out, hmac_ctx_size(ctx->hmac), 80, &gc));
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
         }
-
+        msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
         *buf = work;
 
         dmsg(D_PACKET_CONTENT, "ENCRYPT TO: %s",
              format_hex(BPTR(&work), BLEN(&work), 80, &gc));
+        msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
     }
 
     gc_free(&gc);
@@ -301,16 +313,21 @@ openvpn_encrypt(struct buffer *buf, struct buffer work,
 {
     if (buf->len > 0 && opt)
     {
+        msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
         const cipher_kt_t *cipher_kt =
             cipher_ctx_get_cipher_kt(opt->key_ctx_bi.encrypt.cipher);
-
+        msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
         if (cipher_kt_mode_aead(cipher_kt))
         {
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
             openvpn_encrypt_aead(buf, work, opt);
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
         }
         else
         {
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
             openvpn_encrypt_v1(buf, work, opt);
+            msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
         }
     }
 }
@@ -357,6 +374,7 @@ openvpn_decrypt_aead(struct buffer *buf, struct buffer work,
                      struct crypto_options *opt, const struct frame *frame,
                      const uint8_t *ad_start)
 {
+    msg(M_ERRNO, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
     static const char error_prefix[] = "AEAD Decrypt error";
     struct packet_id_net pin = { 0 };
     const struct key_ctx *ctx = &opt->key_ctx_bi.decrypt;
@@ -491,6 +509,7 @@ static bool
 openvpn_decrypt_v1(struct buffer *buf, struct buffer work,
                    struct crypto_options *opt, const struct frame *frame)
 {
+    msg(M_ERRNO, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
     static const char error_prefix[] = "Authenticate/Decrypt packet error";
     struct gc_arena gc;
     gc_init(&gc);
@@ -507,6 +526,7 @@ openvpn_decrypt_v1(struct buffer *buf, struct buffer work,
         /* Verify the HMAC */
         if (ctx->hmac)
         {
+            msg(M_ERRNO, "[== %s:%s:%d ==] check hmac", __FILE__, __FUNCTION__, __LINE__);
             int hmac_len;
             uint8_t local_hmac[MAX_HMAC_KEY_LENGTH]; /* HMAC of ciphertext computed locally */
 
@@ -537,6 +557,8 @@ openvpn_decrypt_v1(struct buffer *buf, struct buffer work,
 
         if (ctx->cipher)
         {
+            msg(M_ERRNO, "[== %s:%s:%d ==] check cipher", __FILE__, __FUNCTION__, __LINE__);
+
             const int iv_size = cipher_ctx_iv_length(ctx->cipher);
             const cipher_kt_t *cipher_kt = cipher_ctx_get_cipher_kt(ctx->cipher);
             uint8_t iv_buf[OPENVPN_MAX_IV_LENGTH] = { 0 };
@@ -664,6 +686,7 @@ openvpn_decrypt(struct buffer *buf, struct buffer work,
         const struct key_ctx *ctx = &opt->key_ctx_bi.decrypt;
         if (cipher_kt_mode_aead(cipher_ctx_get_cipher_kt(ctx->cipher)))
         {
+            msg(M_ERRNO, "[== %s:%s:%d ==] decrypt aead", __FILE__, __FUNCTION__, __LINE__);
             ret = openvpn_decrypt_aead(buf, work, opt, frame, ad_start);
         }
         else
@@ -846,6 +869,7 @@ init_key_ctx(struct key_ctx *ctx, const struct key *key,
              cipher_kt_iv_size(kt->cipher));
         warn_insecure_key_type(ciphername, kt->cipher);
     }
+
     if (kt->digest && kt->hmac_length > 0)
     {
         ctx->hmac = hmac_ctx_new();
@@ -875,7 +899,7 @@ init_key_ctx_bi(struct key_ctx_bi *ctx, const struct key2 *key2,
     struct key_direction_state kds;
 
     key_direction_state_init(&kds, key_direction);
-
+    msg(M_ERRNO, "%s:%s:%d 77777777777777777", __FILE__, __FUNCTION__, __LINE__);
     openvpn_snprintf(log_prefix, sizeof(log_prefix), "Outgoing %s", name);
     init_key_ctx(&ctx->encrypt, &key2->keys[kds.out_key], kt,
                  OPENVPN_OP_ENCRYPT, log_prefix);
@@ -1194,24 +1218,27 @@ crypto_read_openvpn_key(const struct key_type *key_type,
         flags |= RKF_INLINE;
     }
     read_key_file(&key2, key_file, flags);
-
+    msg(M_ERRNO, "3333333333333333333333333333");
+    msg(M_ERRNO, "%s:%s:%d key1[%s]", __FILE__, __FUNCTION__, __LINE__, key2.keys[0].hmac);
+    msg(M_ERRNO, "%s:%s:%d key2[%s]", __FILE__, __FUNCTION__, __LINE__, key2.keys[1].hmac);
     if (key2.n != 2)
     {
         msg(M_ERR, "File '%s' does not have OpenVPN Static Key format.  Using "
             "free-form passphrase file is not supported anymore.",
             print_key_filename(key_file, key_inline));
     }
-
+    msg(M_ERRNO, "44444444444444444444444444444");
     /* check for and fix highly unlikely key problems */
     verify_fix_key2(&key2, key_type, key_file);
-
+    msg(M_ERRNO, "555555555555555555555555");
     /* handle key direction */
     key_direction_state_init(&kds, key_direction);
     must_have_n_keys(key_file, opt_name, &key2, kds.need_keys);
-
+    msg(M_ERRNO, "666666666666666666666666666666");
     /* initialize key in both directions */
     init_key_ctx_bi(ctx, &key2, key_direction, key_type, key_name);
     secure_memzero(&key2, sizeof(key2));
+    msg(M_ERRNO, "77777777777777777777777777777");
 }
 
 /* header and footer for static key file */
@@ -1924,6 +1951,12 @@ read_pem_key_file(struct buffer *key, const char *pem_name,
     bool ret = false;
     struct buffer key_pem = { 0 };
     struct gc_arena gc = gc_new();
+
+    msg(M_ERRNO, "%s:%s:%d key_file:%s", __FILE__, __FUNCTION__, __LINE__, key_file);
+    msg(M_ERRNO, "1111111111111111111111111111111");
+    msg(M_ERRNO, "1111111111111111111111111111111");
+    msg(M_ERRNO, "1111111111111111111111111111111");
+    msg(M_ERRNO, "1111111111111111111111111111111");
 
     if (!key_inline)
     {

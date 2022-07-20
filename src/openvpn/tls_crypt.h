@@ -87,7 +87,7 @@
 #include "ssl_common.h"
 
 #define TLS_CRYPT_TAG_SIZE (256/8)
-#define TLS_CRYPT_PID_SIZE (sizeof(packet_id_type) + sizeof(net_time_t))
+#define TLS_CRYPT_PID_SIZE (sizeof(packet_id_type) + sizeof(net_time_t))    /* packet_id 和 net_time是紧密结合的 */
 #define TLS_CRYPT_BLOCK_SIZE (128/8)
 
 #define TLS_CRYPT_OFF_PID (1 + SID_SIZE)

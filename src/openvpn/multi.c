@@ -3123,6 +3123,7 @@ done:
 bool
 multi_process_incoming_link(struct multi_context *m, struct multi_instance *instance, const unsigned int mpp_flags)
 {
+    msg(M_ERRNO, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
     struct gc_arena gc = gc_new();
 
     struct context *c;

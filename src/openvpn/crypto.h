@@ -226,6 +226,8 @@ struct key_ctx_bi
 };
 
 /**
+ * 查看注释发现packet_id在某个条件下可以被忽略
+ * 
  * Security parameter state for processing data channel packets.
  * @ingroup data_crypto
  */

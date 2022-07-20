@@ -74,34 +74,37 @@ tunnel_point_to_point(struct context *c)
     /* main event loop */
     while (true)
     {
-        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
+        msg(M_ERRNO, "[== %s:%s:%d ==] loop.restart buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&c->c2.to_link));
         perf_push(PERF_EVENT_LOOP);
-        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+        msg(M_ERRNO, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&c->c2.to_link));
 
         /* process timers, TLS, etc. */
         pre_select(c);
-        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+        msg(M_ERRNO, "[== %s:%s:%d ==] pre_select.done buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&c->c2.to_link));
         P2P_CHECK_SIG();
-        msg(M_ERRNO, "%s:%s:%d status:%d", __FILE__, __FUNCTION__, __LINE__, c->c2.event_set_status);
+        msg(M_ERRNO, "[== %s:%s:%d ==] status:%d", __FILE__, __FUNCTION__, __LINE__, c->c2.event_set_status);
+
         /* set up and do the I/O wait */
         io_wait(c, p2p_iow_flags(c));
-        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+        msg(M_ERRNO, "[== %s:%s:%d ==] io_wait.done buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&c->c2.to_link));
         P2P_CHECK_SIG();
         msg(M_ERRNO, "%s:%s:%d status:%d", __FILE__, __FUNCTION__, __LINE__, c->c2.event_set_status);
+        
         /* timeout? */
         if (c->c2.event_set_status == ES_TIMEOUT)
         {
-        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+            msg(M_ERRNO, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&c->c2.to_link));
             perf_pop();
             continue;
         }
-        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+        msg(M_ERRNO, "[== %s:%s:%d ==] process_io.start buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&c->c2.to_link));
+
         /* process the I/O which triggered select */
         process_io(c);
-        msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+        msg(M_ERRNO, "[== %s:%s:%d ==] process_io.done buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&c->c2.to_link));
         P2P_CHECK_SIG();
-        msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
         perf_pop();
+        msg(M_ERRNO, "[== %s:%s:%d ==] loop.done buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&c->c2.to_link));
     }
 
     uninit_management_callback();

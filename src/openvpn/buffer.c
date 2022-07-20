@@ -1406,3 +1406,18 @@ cleanup:
     fclose(fp);
     return ret;
 }
+
+
+char *
+buffer_hex_out(struct buffer *buf)
+{
+    static char cache[20480] = {0};
+    cache[sizeof(cache) - 1] = 0;
+
+    int sz = buf->len;
+    for (int i = 0; i < sz; i++) {
+        snprintf(cache + i * 2, sizeof(cache), "%02X ", (uint8_t)(buf->data[buf->offset+i]));
+    }
+
+    return cache;
+}

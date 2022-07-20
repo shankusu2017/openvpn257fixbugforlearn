@@ -181,6 +181,7 @@ __attribute__ ((format(__printf__, 2, 3)))
 #endif
 ;     /* should be called via msg above */
 
+
 void x_msg_va(const unsigned int flags, const char *format, va_list arglist);
 
 /*

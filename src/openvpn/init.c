@@ -2597,7 +2597,7 @@ do_init_crypto_static(struct context *c, const unsigned int flags)
         /* Get cipher & hash algorithms */
         init_key_type(&c->c1.ks.key_type, options->ciphername, options->authname,
                       options->keysize, options->test_crypto, true);
-
+        msg(M_ERRNO, "2222222222222222222222222222");
         /* Read cipher and hmac keys from shared secret file */
         crypto_read_openvpn_key(&c->c1.ks.key_type, &c->c1.ks.static_key,
                                 options->shared_secret_file,
@@ -2646,6 +2646,8 @@ do_init_tls_wrap_key(struct context *c)
                 "algorithm specified ('%s')", options->authname);
         }
 
+        msg(M_ERRNO, "2222222222222222222222222222222");
+        msg(M_ERRNO, "%s:%s:%d key.file.path:%s", __FILE__, __FUNCTION__, __LINE__, options->ce.tls_auth_file);
         crypto_read_openvpn_key(&c->c1.ks.tls_auth_key_type,
                                 &c->c1.ks.tls_wrap_key,
                                 options->ce.tls_auth_file,

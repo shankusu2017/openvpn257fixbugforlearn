@@ -617,6 +617,8 @@ buf_prepend(struct buffer *buf, int size)
     return BPTR(buf);
 }
 
+
+/* 这个函数简洁方便 */
 static inline bool
 buf_advance(struct buffer *buf, int size)
 {
@@ -778,6 +780,7 @@ buf_copy_excess(struct buffer *dest,
     }
 }
 
+/* 看下，这个函数蛮有意思 */
 static inline bool
 buf_read(struct buffer *src, void *dest, int size)
 {
@@ -1200,5 +1203,14 @@ struct buffer_list *buffer_list_file(const char *fn, int max_line_len);
  * error
  */
 struct buffer buffer_read_from_file(const char *filename, struct gc_arena *gc);
+
+/**
+ * @brief 
+ * 
+ * @param buf 
+ */
+char *buffer_hex_out(struct buffer *buf);
+
+void buffer_10_out(struct buffer *buf);
 
 #endif /* BUFFER_H */

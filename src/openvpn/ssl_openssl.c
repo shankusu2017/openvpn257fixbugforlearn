@@ -34,6 +34,9 @@
 
 #include "syshead.h"
 
+// 方便查看所有的代码
+#define ENABLE_CRYPTO_OPENSSL
+
 #if defined(ENABLE_CRYPTO_OPENSSL)
 
 #include "errlevel.h"
@@ -204,8 +207,10 @@ key_state_export_keying_material(struct key_state_ssl *ssl,
 static void
 info_callback(INFO_CALLBACK_SSL_CONST SSL *s, int where, int ret)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
     if (where & SSL_CB_LOOP)
     {
+        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
         dmsg(D_HANDSHAKE_VERBOSE, "SSL state (%s): %s",
              where & SSL_ST_CONNECT ? "connect" :
              where &SSL_ST_ACCEPT ? "accept" :
@@ -213,6 +218,7 @@ info_callback(INFO_CALLBACK_SSL_CONST SSL *s, int where, int ret)
     }
     else if (where & SSL_CB_ALERT)
     {
+        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
         dmsg(D_HANDSHAKE_VERBOSE, "SSL alert (%s): %s: %s",
              where & SSL_CB_READ ? "read" : "write",
              SSL_alert_type_string_long(ret),
@@ -331,6 +337,8 @@ tls_ctx_set_tls_versions(struct tls_root_ctx *ctx, unsigned int ssl_flags)
 bool
 tls_ctx_set_options(struct tls_root_ctx *ctx, unsigned int ssl_flags)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
+
     ASSERT(NULL != ctx);
 
     /* process SSL options */
@@ -1990,6 +1998,7 @@ key_state_write_plaintext(struct key_state_ssl *ks_ssl, struct buffer *buf)
 
     ret = bio_write(ks_ssl->ssl_bio, BPTR(buf), BLEN(buf),
                     "tls_write_plaintext");
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] buf.len:%d, bio_write:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf), ret);
     bio_write_post(ret, buf);
 #endif /* ENABLE_CRYPTO_OPENSSL */
 
@@ -2020,7 +2029,9 @@ key_state_read_ciphertext(struct key_state_ssl *ks_ssl, struct buffer *buf,
 
     ASSERT(NULL != ks_ssl);
 
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] start buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
     ret = bio_read(ks_ssl->ct_out, buf, maxlen, "tls_read_ciphertext");
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] done buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
 
     perf_pop();
     return ret;
@@ -2029,6 +2040,7 @@ key_state_read_ciphertext(struct key_state_ssl *ks_ssl, struct buffer *buf,
 int
 key_state_write_ciphertext(struct key_state_ssl *ks_ssl, struct buffer *buf)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] key_state_write_ciphertext.start buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
     int ret = 0;
     perf_push(PERF_BIO_WRITE_CIPHERTEXT);
 
@@ -2038,6 +2050,7 @@ key_state_write_ciphertext(struct key_state_ssl *ks_ssl, struct buffer *buf)
     bio_write_post(ret, buf);
 
     perf_pop();
+    msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] key_state_write_ciphertext.done buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
     return ret;
 }
 
@@ -2045,6 +2058,7 @@ int
 key_state_read_plaintext(struct key_state_ssl *ks_ssl, struct buffer *buf,
                          int maxlen)
 {
+    msg(M_ERRNO, "[== %s:%s:%d ==] key_state_read_plaintext.start buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
     int ret = 0;
     perf_push(PERF_BIO_READ_PLAINTEXT);
 
@@ -2053,6 +2067,7 @@ key_state_read_plaintext(struct key_state_ssl *ks_ssl, struct buffer *buf,
     ret = bio_read(ks_ssl->ssl_bio, buf, maxlen, "tls_read_plaintext");
 
     perf_pop();
+    msg(M_ERRNO, "[== %s:%s:%d ==] key_state_read_plaintext.done buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
     return ret;
 }
 

@@ -171,6 +171,7 @@ multi_process_outgoing_link(struct multi_context *m, const unsigned int mpp_flag
 static void
 multi_process_io_udp(struct multi_context *m)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     const unsigned int status = m->top.c2.event_set_status;
     const unsigned int mpp_flags = m->top.c2.fast_io
                                    ? (MPP_CONDITIONAL_PRE_SELECT | MPP_CLOSE_ON_SIGNAL)

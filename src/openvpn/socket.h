@@ -1063,6 +1063,7 @@ link_socket_write_udp_posix(struct link_socket *sock,
     else
 #endif
     msg(M_ERRNO, "\n\n\n==[%d-->%s:%d]== %s:%s:%d\n\n", socket_seq(), packet_opcode_name((*BPTR(buf) & 0xf8)>>3), (*BPTR(buf) & P_KEY_ID_MASK), __FILE__, __FUNCTION__, __LINE__);
+    msg(M_ERRNO, "write.content[%s]", __FILE__, __FUNCTION__, __LINE__, buffer_hex_out(buf));
     return sendto(sock->sd, BPTR(buf), BLEN(buf), 0,
                   (struct sockaddr *) &to->dest.addr.sa,
                   (socklen_t) af_addr_size(to->dest.addr.sa.sa_family));
