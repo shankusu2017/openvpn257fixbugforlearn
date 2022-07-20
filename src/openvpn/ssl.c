@@ -2903,9 +2903,11 @@ tls_process(struct tls_multi *multi,
         }
 
         /* Write incoming ciphertext to TLS object */
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
+        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d, rec_reliable.packet_id:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link), ks->rec_reliable->packet_id);
         buf = reliable_get_buf_sequenced(ks->rec_reliable);
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
+        if (buf) {
+            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
+        }
 
         if (buf)
         {
@@ -2938,10 +2940,13 @@ tls_process(struct tls_multi *multi,
         buf = &ks->plaintext_read_buf;
         if (!buf->len)
         {
+            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d", __FILE__, __FUNCTION__, __LINE__, ks->state);
+
             int status;
 
             ASSERT(buf_init(buf, 0));
             status = key_state_read_plaintext(&ks->ks_ssl, buf, TLS_CHANNEL_BUF_SIZE);
+            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, ks->state, BLEN(buf));
             update_time();
             if (status == -1)
             {
@@ -2957,7 +2962,7 @@ tls_process(struct tls_multi *multi,
                 *wakeup = 0;
             }
         }
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
+        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d, buf.len:%d", __FILE__, __FUNCTION__, __LINE__, ks->state, BLEN(to_link));
 
         /* Send Key */
         buf = &ks->plaintext_write_buf;
