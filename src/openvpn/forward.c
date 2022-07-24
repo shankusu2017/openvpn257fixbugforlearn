@@ -802,6 +802,7 @@ void
 read_incoming_link(struct context *c)
 {
     msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
+    msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
     /*
      * Set up for recvfrom call to read datagram
      * sent to our TCP/UDP port.
@@ -818,9 +819,10 @@ read_incoming_link(struct context *c)
     status = link_socket_read(c->c2.link_socket,
                               &c->c2.buf,
                               &c->c2.from);
-
+    msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
     if (socket_connection_reset(c->c2.link_socket, status))
     {
+        msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
 #if PORT_SHARE
         if (port_share && socket_foreign_protocol_detected(c->c2.link_socket))
         {
@@ -853,6 +855,7 @@ read_incoming_link(struct context *c)
             }
         }
         perf_pop();
+        msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
         return;
     }
 
@@ -863,6 +866,7 @@ read_incoming_link(struct context *c)
     socks_postprocess_incoming_link(c);
 
     perf_pop();
+    msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
 }
 
 bool

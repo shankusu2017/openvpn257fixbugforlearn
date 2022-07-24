@@ -2940,13 +2940,16 @@ tls_process(struct tls_multi *multi,
         buf = &ks->plaintext_read_buf;
         if (!buf->len)
         {
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d", __FILE__, __FUNCTION__, __LINE__, ks->state);
+            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d, buf.len:%d, buf.content:%s", __FILE__, __FUNCTION__, __LINE__, ks->state, BLEN(buf), BSTR(buf));
 
             int status;
 
             ASSERT(buf_init(buf, 0));
             status = key_state_read_plaintext(&ks->ks_ssl, buf, TLS_CHANNEL_BUF_SIZE);
             msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, ks->state, BLEN(buf));
+            if (BLEN(buf) == 39) {
+                msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d buf.content:%s", __FILE__, __FUNCTION__, __LINE__, ks->state, BSTR(buf));
+            }
             update_time();
             if (status == -1)
             {
