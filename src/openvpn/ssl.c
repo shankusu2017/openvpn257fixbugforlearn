@@ -3638,13 +3638,15 @@ tls_pre_decrypt(struct tls_multi *multi,
                 print_link_socket_actual(from, &gc));
             goto error;
         }
-
+        msg(M_ERRNO, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
         /*
          * Remote is requesting a key renegotiation
          */
         if (op == P_CONTROL_SOFT_RESET_V1
             && DECRYPT_KEY_ENABLED(multi, ks))
         {
+            
+            msg(M_ERRNO, "[== %s:%d %s:%d ==]", __FILE__, __LINE__, __FUNCTION__, __LINE__);
             if (!read_control_auth(buf, &session->tls_wrap, from,
                                    session->opt))
             {
@@ -3666,7 +3668,7 @@ tls_pre_decrypt(struct tls_multi *multi,
             {
                 do_burst = true;
             }
-
+            msg(M_ERRNO, "[== %s:%d %s:%d ==]", __FILE__, __LINE__, __FUNCTION__, __LINE__);
             if (!read_control_auth(buf, &session->tls_wrap, from,
                                    session->opt))
             {

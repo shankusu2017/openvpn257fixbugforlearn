@@ -1845,7 +1845,7 @@ pre_select(struct context *c)
         msg(M_ERRNO, "[== %s:%s:%d ==] check_tls.start buf.len: %d", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         check_tls(c);
     }
-    msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
+    msg(M_ERRNO, "[]==%s:%d :%s ==] buf.len(%d)", __FILE__, __LINE__,  __FUNCTION__, BLEN(&c->c2.to_link));
 
     /* In certain cases, TLS errors will require a restart */
     check_tls_errors(c);
@@ -1857,9 +1857,12 @@ pre_select(struct context *c)
 #if P2MP
     /* check for incoming control messages on the control channel like
      * push request/reply, or authentication failure and 2FA messages */
-    if (tls_test_payload_len(c->c2.tls_multi) > 0)
-    {
-        check_incoming_control_channel(c);
+    {   int n = 0;
+        if (n = tls_test_payload_len(c->c2.tls_multi) > 0)
+        {
+            msg(M_ERRNO, "[]==%s:%d :%s ==] tls_payload_len: %d", __FILE__, __LINE__,  __FUNCTION__, n);
+            check_incoming_control_channel(c);
+        }
     }
 #endif
 
