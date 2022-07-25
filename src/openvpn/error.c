@@ -846,7 +846,7 @@ strerror_win32(DWORD errnum, struct gc_arena *gc)
 
         case WSA_IO_INCOMPLETE:
             return "I/O Operation in progress (WSA_IO_INCOMPLETE)";
-
+        
         case WSAEINTR:
             return "Interrupted system call (WSAEINTR)";
 

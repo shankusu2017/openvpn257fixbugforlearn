@@ -38,6 +38,9 @@
 
 #include "memdbg.h"
 
+
+#define P2MP 1
+
 #if P2MP
 
 static char push_reply_cmd[] = "PUSH_REPLY";

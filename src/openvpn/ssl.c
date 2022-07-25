@@ -879,11 +879,9 @@ is_hard_reset_method2(int op)
     if (op == P_CONTROL_HARD_RESET_CLIENT_V2 || op == P_CONTROL_HARD_RESET_SERVER_V2
         || op == P_CONTROL_HARD_RESET_CLIENT_V3)
     {
-        msg(M_ERRNO, "[== %s:%s:%d ==] return true", __FILE__, __FUNCTION__, __LINE__);
         return true;
     }
 
-    msg(M_ERRNO, "[== %s:%s:%d ==] return false", __FILE__, __FUNCTION__, __LINE__);
     return false;
 }
 
@@ -1465,35 +1463,26 @@ write_control_auth(struct tls_session *session,
     uint8_t header = ks->key_id | (opcode << P_OPCODE_SHIFT);
     struct buffer null = clear_buf();
 
-    msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
-    msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
     ASSERT(link_socket_actual_defined(&ks->remote_addr));
     ASSERT(reliable_ack_write(ks->rec_ack, buf, &ks->session_id_remote, max_ack, prepend_ack));
-    msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
 
     msg(D_TLS_DEBUG, "%s(): %s", __func__, packet_opcode_name(opcode));
 
     if (session->tls_wrap.mode == TLS_WRAP_AUTH
         || session->tls_wrap.mode == TLS_WRAP_NONE)
     {
-        msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
         ASSERT(session_id_write_prepend(&session->session_id, buf));
         ASSERT(buf_write_prepend(buf, &header, sizeof(header)));
-        msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
     }
 
-    msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
     if (session->tls_wrap.mode == TLS_WRAP_AUTH)
     {
-        msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
         /* no encryption, only write hmac */
         openvpn_encrypt(buf, null, &session->tls_wrap.opt);
         ASSERT(swap_hmac(buf, &session->tls_wrap.opt, false));
-        msg(M_ERRNO, "%s:%s:%d buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(buf), buffer_hex_out(buf));
     }
     else if (session->tls_wrap.mode == TLS_WRAP_CRYPT)
     {
-        msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
         ASSERT(buf_init(&session->tls_wrap.work, buf->offset));
         ASSERT(buf_write(&session->tls_wrap.work, &header, sizeof(header)));
         ASSERT(session_id_write(&session->session_id, &session->tls_wrap.work));
@@ -1502,7 +1491,6 @@ write_control_auth(struct tls_session *session,
             buf->len = 0;
             return;
         }
-        msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
         if (opcode == P_CONTROL_HARD_RESET_CLIENT_V3)
         {
             if (!buf_copy(&session->tls_wrap.work,
@@ -1517,7 +1505,6 @@ write_control_auth(struct tls_session *session,
         /* Don't change the original data in buf, it's used by the reliability
          * layer to resend on failure. */
         *buf = session->tls_wrap.work;
-        msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
     }
     msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
     *to_link_addr = &ks->remote_addr;
@@ -2076,11 +2063,10 @@ key_source2_randomize_write(struct key_source2 *k2,
 
     if (!server)
     {
-        msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] start buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
         char tmp [2048] = {0};
         tmp[sizeof(tmp) - 1] = 0;
         snprintf(tmp, sizeof(tmp), "pre_master.random[%s]", k->pre_master);
-        msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] %s", __FILE__, __LINE__, __FUNCTION__, __LINE__, tmp);
+        msg(M_DEBUG_LEVEL, "[== %s:%d %s ==] write client random %s", __FILE__, __LINE__, __FUNCTION__, tmp);
         if (!random_bytes_to_buf(buf, k->pre_master, sizeof(k->pre_master)))
         {
             return false;
@@ -2373,42 +2359,39 @@ key_method_2_write(struct buffer *buf, struct tls_multi *multi,
     struct key_state *ks = &session->key[KS_PRIMARY];      /* primary key */
 
     ASSERT(buf_init(buf, 0));
-    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] start buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==] start buf.len:%d", __FILE__, __LINE__, __FUNCTION__, BLEN(buf));
 
     /* write a uint32 0 */
     if (!buf_write_u32(buf, 0))
     {
         goto error;
     }
-    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
 
     /* write key_method + flags */
     if (!buf_write_u8(buf, KEY_METHOD_2))
     {
         goto error;
     }
-    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
 
     /* write key source material */
     if (!key_source2_randomize_write(ks->key_src, buf, session->opt->server))
     {
         goto error;
     }
-    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] randomize.write.done buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
 
     /* write options string */
-    { msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] local_options:%s", __FILE__, __LINE__, __FUNCTION__, __LINE__, session->opt->local_options);
+    { 
+        msg(M_DEBUG_LEVEL, "[== %s:%d %s ==] len:%d local_options:%s", __FILE__, __LINE__, __FUNCTION__,BLEN(buf), session->opt->local_options);
         if (!write_string(buf, session->opt->local_options, TLS_OPTIONS_LEN))
         {
             goto error;
         }
     }
-    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] local_options.write.done buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
 
     /* write username/password if specified or we are using a auth-token */
     if (auth_user_pass_enabled || (auth_token.token_defined && auth_token.defined))
     {
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
+        msg(M_DEBUG_LEVEL, "[== %s:%d %s ==] write psw", __FILE__,__LINE__, __FUNCTION__);
 #ifdef ENABLE_MANAGEMENT
         auth_user_pass_setup(session->opt->auth_user_pass_file, session->opt->sci);
 #else
@@ -2451,7 +2434,7 @@ key_method_2_write(struct buffer *buf, struct tls_multi *multi,
     }
     else
     {
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
+        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] write psw", __FILE__, __FUNCTION__, __LINE__);
         if (!write_empty_string(buf)) /* no username */
         {
             goto error;
@@ -2738,7 +2721,6 @@ tls_process(struct tls_multi *multi,
             ks->n_packets, session->opt->renegotiate_packets);
         key_state_soft_reset(session);
     }
-    // msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
     /* Kill lame duck key transition_window seconds after primary key negotiation */
     if (lame_duck_must_die(session, wakeup))
@@ -2747,10 +2729,9 @@ tls_process(struct tls_multi *multi,
         msg(D_TLS_DEBUG_LOW, "TLS: tls_process: killed expiring key");
     }
 
-    // msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
     do
     {
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, ks->state, BLEN(to_link));
+        msg(M_DEBUG_LEVEL, "[== %s:%d %s ==] ks->state:%d ======== loop restart ========", __FILE__, __LINE__, __FUNCTION__,  ks->state);
 
         update_time();
 
@@ -2770,16 +2751,11 @@ tls_process(struct tls_multi *multi,
          * CHANGED with 2.0 -> now we may send tunnel configuration
          * info over the control channel.
          */
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
         /* Initial handshake */
         if (ks->state == S_INITIAL)
         {
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state=S_INITIAL buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
-
             buf = reliable_get_buf_output_sequenced(ks->send_reliable);
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
-
             if (buf)
             {
                 ks->must_negotiate = now + session->opt->handshake_window;
@@ -2788,7 +2764,6 @@ tls_process(struct tls_multi *multi,
                 /* null buffer */
                 reliable_mark_active_outgoing(ks->send_reliable, buf, ks->initial_opcode);
                 INCR_GENERATED;
-                msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state-> S_PRE_START buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
                 ks->state = S_PRE_START;
                 state_change = true;
@@ -2809,7 +2784,7 @@ tls_process(struct tls_multi *multi,
 #endif
             }
         }
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
+
         /* Are we timed out on receive? */
         if (now >= ks->must_negotiate && ks->state < S_ACTIVE)
         {
@@ -2843,7 +2818,6 @@ tls_process(struct tls_multi *multi,
 
             dmsg(D_TLS_DEBUG_MED, "STATE S_START");
         }
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
         /* Wait for ACK */
         if (((ks->state == S_GOT_KEY && !session->opt->server)
@@ -2862,7 +2836,7 @@ tls_process(struct tls_multi *multi,
                 /* Cancel negotiation timeout */
                 ks->must_negotiate = 0;
                 INCR_SUCCESS;
-                msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] TLS ACTIVE NOW!!", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
+                msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] 1111111 TLS ACTIVE NOW!! len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
                 /* Set outgoing address for data channel packets */
                 link_socket_set_outgoing_addr(to_link_socket_info, &ks->remote_addr, session->common_name, session->opt->es);
@@ -2875,14 +2849,11 @@ tls_process(struct tls_multi *multi,
 #endif
             }
         }
-        msg(M_ERRNO, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
         /* Reliable buffer to outgoing TCP/UDP (send up to CONTROL_SEND_ACK_MAX ACKs
          * for previously received packets) */
         if (!to_link->len && reliable_can_send(ks->send_reliable))
         {
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link), buffer_hex_out(to_link));
-
             int opcode;
             struct buffer b;
 
@@ -2890,8 +2861,6 @@ tls_process(struct tls_multi *multi,
             ASSERT(buf);
             b = *buf;
             INCR_SENT;
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link), buffer_hex_out(to_link));
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d, buf.hex:[%s]", __FILE__, __FUNCTION__, __LINE__, BLEN(&b), buffer_hex_out(&b));
             write_control_auth(session, ks, &b, to_link_addr, opcode,
                                CONTROL_SEND_ACK_MAX, true);
             msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(&b));
@@ -2903,12 +2872,7 @@ tls_process(struct tls_multi *multi,
         }
 
         /* Write incoming ciphertext to TLS object */
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d, rec_reliable.packet_id:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link), ks->rec_reliable->packet_id);
         buf = reliable_get_buf_sequenced(ks->rec_reliable);
-        if (buf) {
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
-        }
-
         if (buf)
         {
             int status = 0;
@@ -2940,16 +2904,10 @@ tls_process(struct tls_multi *multi,
         buf = &ks->plaintext_read_buf;
         if (!buf->len)
         {
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d, buf.len:%d, buf.content:%s", __FILE__, __FUNCTION__, __LINE__, ks->state, BLEN(buf), BSTR(buf));
-
             int status;
-
             ASSERT(buf_init(buf, 0));
             status = key_state_read_plaintext(&ks->ks_ssl, buf, TLS_CHANNEL_BUF_SIZE);
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, ks->state, BLEN(buf));
-            if (BLEN(buf) == 39) {
-                msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d buf.content:%s", __FILE__, __FUNCTION__, __LINE__, ks->state, BSTR(buf));
-            }
+            msg(M_DEBUG_LEVEL, "[== %s:%d %s ==] ks->state:%d, buf.len:%d, buf.content:%s", __FILE__, __LINE__, __FUNCTION__,  ks->state, BLEN(buf), BSTR(buf));
             update_time();
             if (status == -1)
             {
@@ -2965,14 +2923,12 @@ tls_process(struct tls_multi *multi,
                 *wakeup = 0;
             }
         }
-        msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] ks->state:%d, buf.len:%d", __FILE__, __FUNCTION__, __LINE__, ks->state, BLEN(to_link));
 
         /* Send Key */
         buf = &ks->plaintext_write_buf;
         if (!buf->len && ((ks->state == S_START && !session->opt->server)
                           || (ks->state == S_GOT_KEY && session->opt->server)))
         {
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] SendKey buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
             if (!key_method_2_write(buf, multi, session))
             {
                 goto error;
@@ -2990,7 +2946,6 @@ tls_process(struct tls_multi *multi,
             && ((ks->state == S_SENT_KEY && !session->opt->server)
                 || (ks->state == S_START && session->opt->server)))
         {
-            msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] RcvKey buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
             if (!key_method_2_read(buf, multi, session))
             {
                 goto error;
@@ -3005,13 +2960,11 @@ tls_process(struct tls_multi *multi,
         buf = &ks->plaintext_write_buf;
         if (buf->len)
         {
-            msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
             int status = key_state_write_plaintext(&ks->ks_ssl, buf);
             msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
             if (status == -1)
             {
-                msg(D_TLS_ERRORS,
-                    "TLS ERROR: Outgoing Plaintext -> TLS object write error");
+                msg(D_TLS_ERRORS, "TLS ERROR: Outgoing Plaintext -> TLS object write error");
                 goto error;
             }
             if (status == 1)
@@ -3020,7 +2973,6 @@ tls_process(struct tls_multi *multi,
                 dmsg(D_TLS_DEBUG, "Outgoing Plaintext -> TLS");
             }
         }
-        msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
         /* Outgoing Ciphertext to reliable buffer */
         if (ks->state >= S_START)
@@ -3032,13 +2984,11 @@ tls_process(struct tls_multi *multi,
                 int status = key_state_read_ciphertext(&ks->ks_ssl, buf, PAYLOAD_SIZE_DYNAMIC(&multi->opt.frame));
                 if (status == -1)
                 {
-                    msg(D_TLS_ERRORS,
-                        "TLS Error: Ciphertext -> reliable TCP/UDP transport read error");
+                    msg(D_TLS_ERRORS, "TLS Error: Ciphertext -> reliable TCP/UDP transport read error");
                     goto error;
                 }
                 if (status == 1)
                 {
-                    msg(M_DEBUG_LEVEL, "[== %s:%d %s:%d ==] buf.len:%d", __FILE__, __LINE__, __FUNCTION__, __LINE__, BLEN(buf));
                     reliable_mark_active_outgoing(ks->send_reliable, buf, P_CONTROL_V1);
                     INCR_GENERATED;
                     state_change = true;
@@ -3050,8 +3000,9 @@ tls_process(struct tls_multi *multi,
     while (state_change);
     msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
+
+
     update_time();
-    msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
     /* Send 1 or more ACKs (each received control packet gets one ACK) */
     if (!to_link->len && !reliable_ack_empty(ks->rec_ack))
@@ -3064,7 +3015,6 @@ tls_process(struct tls_multi *multi,
         active = true;
         dmsg(D_TLS_DEBUG, "Dedicated ACK -> TCP/UDP");
     }
-    msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
 
     /* When should we wake up again? */
     {
@@ -3160,12 +3110,12 @@ tls_multi_process(struct tls_multi *multi,
         {
             struct link_socket_actual *tla = NULL;
             update_time();
-            msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
+            int len1 = BLEN(to_link);
             if (tls_process(multi, session, to_link, &tla, to_link_socket_info, wakeup))
             {
                 active = TLSMP_ACTIVE;
             }
-            msg(M_ERRNO, "%s:%s:%d buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(to_link));
+            msg(M_ERRNO, "%s:%s:%d buf.len1:%d, len2:%d", __FILE__, __FUNCTION__, __LINE__, len1, BLEN(to_link));
 
             /*
              * If tls_process produced an outgoing packet,

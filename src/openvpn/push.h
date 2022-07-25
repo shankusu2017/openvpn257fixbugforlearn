@@ -24,7 +24,8 @@
 #ifndef PUSH_H
 #define PUSH_H
 
-#if P2MP
+// 配置文件中已定义P2MP ，这里重复定义P2MP 方便查看代码
+//#if P2MP
 
 #include "forward.h"
 
@@ -89,5 +90,6 @@ void send_restart(struct context *c, const char *kill_msg);
  */
 void send_push_reply_auth_token(struct tls_multi *multi);
 
-#endif /* if P2MP */
+//#endif /* if P2MP */
+
 #endif /* ifndef PUSH_H */

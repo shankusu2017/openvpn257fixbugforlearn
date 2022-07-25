@@ -52,6 +52,8 @@ counter_type link_write_bytes_global; /* GLOBAL */
 
 /* show event wait debugging info */
 
+#define P2MP 1   // 实际已定义，这里主动重复定义以便查看代码
+
 #ifdef ENABLE_DEBUG
 
 const char *
@@ -147,11 +149,9 @@ check_tls(struct context *c)
 
     if (interval_test(&c->c2.tmp_int))
     {
-        msg(M_ERRNO, "[== %s:%s:%d ==] check_tls.tls_multi_process.start buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         const int tmp_status = tls_multi_process(
                                     c->c2.tls_multi, &c->c2.to_link, &c->c2.to_link_addr,
                                    get_link_socket_info(c), &wakeup);
-        msg(M_ERRNO, "[== %s:%s:%d ==] check_tls.tls_multi_process.done buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
         if (tmp_status == TLSMP_ACTIVE)
         {
             update_time();
@@ -802,7 +802,6 @@ void
 read_incoming_link(struct context *c)
 {
     msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
-    msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
     /*
      * Set up for recvfrom call to read datagram
      * sent to our TCP/UDP port.
@@ -819,7 +818,6 @@ read_incoming_link(struct context *c)
     status = link_socket_read(c->c2.link_socket,
                               &c->c2.buf,
                               &c->c2.from);
-    msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
     if (socket_connection_reset(c->c2.link_socket, status))
     {
         msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
@@ -855,7 +853,6 @@ read_incoming_link(struct context *c)
             }
         }
         perf_pop();
-        msg(M_DEBUG, "[== %s:%s:%d ==] start", __FILE__, __FUNCTION__, __LINE__);
         return;
     }
 
@@ -1110,8 +1107,6 @@ process_incoming_link(struct context *c)
     const uint8_t *orig_buf = c->c2.buf.data;
 
     process_incoming_link_part1(c, lsi, false);
-    msg(M_DEBUG, "[== %s:%s:%d ==] process_incoming_link_part1.done", __FILE__, __FUNCTION__, __LINE__);
-    msg(M_DEBUG, "[== %s:%s:%d ==] process_incoming_link_part2.start", __FILE__, __FUNCTION__, __LINE__);
     process_incoming_link_part2(c, lsi, orig_buf);
     msg(M_DEBUG, "[== %s:%s:%d ==] done", __FILE__, __FUNCTION__, __LINE__);
 
@@ -1575,7 +1570,6 @@ process_ip_header(struct context *c, unsigned int flags, struct buffer *buf)
 void
 process_outgoing_link(struct context *c)
 {
-    msg(M_ERRNO, "====%s:%s:%d==== buf.len(%d)", __FILE__, __FUNCTION__, __LINE__,  BLEN(&c->c2.to_link));
     struct gc_arena gc = gc_new();
     int error_code = 0;
 

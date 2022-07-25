@@ -3427,7 +3427,8 @@ link_socket_read_udp_posix(struct link_socket *sock,
     {
         bad_address_length(fromlen, expectedlen);
     }
-    msg(M_ERRNO, "\n\n\n==[%d<--%s:%d]== %s:%s:%d\n\n", socket_seq(), packet_opcode_name((*BPTR(buf) & 0xf8)>>3), (*BPTR(buf) & P_KEY_ID_MASK), __FILE__, __FUNCTION__, __LINE__);
+    msg(M_ERRNO, "\n\n\n==[%d<--%s:%d len:%d]== %s:%s:%d\n\n", socket_seq(), packet_opcode_name((*BPTR(buf) & 0xf8)>>3), (*BPTR(buf) & P_KEY_ID_MASK), buf->len,
+    __FILE__, __FUNCTION__, __LINE__);
     return buf->len;
 }
 

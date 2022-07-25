@@ -555,6 +555,7 @@ tls_test_payload_len(const struct tls_multi *multi)
         const struct key_state *ks = &multi->session[TM_ACTIVE].key[KS_PRIMARY];
         if (ks->state >= S_ACTIVE)
         {
+            msg(M_ERRNO, "[]==%s:%d :%s ==] tls_payload_len: %d", __FILE__, __LINE__,  __FUNCTION__, BLEN(&ks->plaintext_read_buf));
             return BLEN(&ks->plaintext_read_buf);
         }
     }
