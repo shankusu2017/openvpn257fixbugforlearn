@@ -1788,12 +1788,6 @@ show_settings(const struct options *o)
     show_p2mp_parms(o);
 #endif
 
-#ifdef _WIN32
-    SHOW_BOOL(show_net_up);
-    SHOW_INT(route_method);
-    SHOW_BOOL(block_outside_dns);
-    show_tuntap_options(&o->tuntap_options);
-#endif
 #endif /* ifndef ENABLE_SMALL */
 }
 

@@ -308,7 +308,7 @@ tunnel_server_udp_single_threaded(struct context *top)
 
     /* initialize top-tunnel instance */
     msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
-    init_instance_handle_signals(top, top->es, CC_HARD_USR1_TO_HUP);
+    init_instance_and_handle_signals(top, top->es, CC_HARD_USR1_TO_HUP);
     if (IS_SIG(top))
     {
         return;

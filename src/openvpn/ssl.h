@@ -555,7 +555,9 @@ tls_test_payload_len(const struct tls_multi *multi)
         const struct key_state *ks = &multi->session[TM_ACTIVE].key[KS_PRIMARY];
         if (ks->state >= S_ACTIVE)
         {
-            msg(M_ERRNO, "[]==%s:%d :%s ==] tls_payload_len: %d", __FILE__, __LINE__,  __FUNCTION__, BLEN(&ks->plaintext_read_buf));
+            if (BLEN(&ks->plaintext_read_buf)) {
+                msg(M_ERRNO, "[]==%s:%d :%s ==] tls_payload_len: %d", __FILE__, __LINE__,  __FUNCTION__, BLEN(&ks->plaintext_read_buf));
+            }
             return BLEN(&ks->plaintext_read_buf);
         }
     }
@@ -620,5 +622,8 @@ void
 show_available_tls_ciphers(const char *cipher_list,
                            const char *cipher_list_tls13,
                            const char *tls_cert_profile);
+
+void
+key_ctx_bi_print(const char *desc, const struct key_ctx_bi *k);
 
 #endif /* ifndef OPENVPN_SSL_H */

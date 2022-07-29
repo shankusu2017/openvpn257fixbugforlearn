@@ -134,6 +134,10 @@ struct sha256_digest {
 };
 
 /*
+ * cipher, digest:算法句柄(eg:sha1, AES-256-CBC)
+ * cipher_length, hmac_length:上述对应算法要求的秘钥长度
+ * hmac_length和digest是一对的
+ * 
  * Defines a key type and key length for both cipher and HMAC.
  */
 struct key_type
@@ -158,8 +162,10 @@ struct key
 
 
 /**
+ *
  * Container for one set of cipher and/or HMAC contexts.
  * @ingroup control_processor
+ * 上下文推断：初始化(用key_type结构体相关的参数来初始化)好了后的加解密函数句柄
  */
 struct key_ctx
 {
@@ -552,5 +558,8 @@ key_ctx_bi_defined(const struct key_ctx_bi *key)
  * @param is_inline true when str contains an inline data of some sort
  */
 const char *print_key_filename(const char *str, bool is_inline);
+
+void
+key_ctx_bi_print(const char *desc, const struct key_ctx_bi *k);
 
 #endif /* CRYPTO_H */

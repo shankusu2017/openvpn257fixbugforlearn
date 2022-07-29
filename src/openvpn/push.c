@@ -331,6 +331,7 @@ send_restart(struct context *c, const char *kill_msg)
 void
 incoming_push_message(struct context *c, const struct buffer *buffer)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d: %s ==]", __FILE__, __LINE__, __FUNCTION__);
     struct gc_arena gc = gc_new();
     unsigned int option_types_found = 0;
 
@@ -345,7 +346,7 @@ incoming_push_message(struct context *c, const struct buffer *buffer)
         msg(D_PUSH_ERRORS, "WARNING: Received bad push/pull message: %s", sanitize_control_message(BSTR(buffer), &gc));
     }
     else if (status == PUSH_MSG_REPLY || status == PUSH_MSG_CONTINUATION)
-    {
+{
         c->options.push_option_types_found |= option_types_found;
 
         /* delay bringing tun/tap up until --push parms received from remote */
@@ -372,6 +373,7 @@ cleanup:
 bool
 send_push_request(struct context *c)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d: %s ==]", __FILE__, __LINE__, __FUNCTION__);
     const int max_push_requests = c->options.handshake_window / PUSH_REQUEST_INTERVAL;
     if (++c->c2.n_sent_push_requests <= max_push_requests)
     {
@@ -480,6 +482,7 @@ prepare_push_reply(struct context *c, struct gc_arena *gc,
      */
     if (tls_peer_supports_ncp(c->c2.tls_multi->peer_info))
     {
+        msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
         push_option_fmt(gc, push_list, M_USAGE, "cipher %s", o->ciphername);
     }
 
@@ -491,6 +494,7 @@ send_push_options(struct context *c, struct buffer *buf,
                   struct push_list *push_list, int safe_cap,
                   bool *push_sent, bool *multi_push)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
     struct push_entry *e = push_list->head;
 
     e = push_list->head;
@@ -734,6 +738,7 @@ push_remove_option(struct options *o, const char *p)
 int
 process_incoming_push_request(struct context *c)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d: %s ==]", __FILE__, __LINE__, __FUNCTION__);
     int ret = PUSH_MSG_ERROR;
     struct key_state *ks = &c->c2.tls_multi->session[TM_ACTIVE].key[KS_PRIMARY];
 
@@ -780,6 +785,8 @@ process_incoming_push_request(struct context *c)
 static void
 push_update_digest(md_ctx_t *ctx, struct buffer *buf, const struct options *opt)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d: %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     char line[OPTION_PARM_SIZE];
     while (buf_parse(buf, ',', line, sizeof(line)))
     {
@@ -793,7 +800,8 @@ push_update_digest(md_ctx_t *ctx, struct buffer *buf, const struct options *opt)
         {
             continue;
         }
-        md_ctx_update(ctx, (const uint8_t *) line, strlen(line)+1);
+        msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==] content:[%s]", __FILE__, __LINE__, __FUNCTION__, line);
+        md_ctx_update(ctx, (const uint8_t *) line, strlen(line)+1); // 这里看起来有bug，输入的参数无效
     }
 }
 
@@ -803,6 +811,8 @@ process_incoming_push_reply(struct context *c,
                             unsigned int *option_types_found,
                             struct buffer *buf)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d: %s ==]", __FILE__, __LINE__, __FUNCTION__);
+    
     int ret = PUSH_MSG_ERROR;
     const uint8_t ch = buf_read_u8(buf);
     if (ch == ',')
@@ -810,12 +820,14 @@ process_incoming_push_reply(struct context *c,
         struct buffer buf_orig = (*buf);
         if (!c->c2.pulled_options_digest_init_done)
         {
+            msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
             c->c2.pulled_options_state = md_ctx_new();
             md_ctx_init(c->c2.pulled_options_state, md_kt_get("SHA256"));
             c->c2.pulled_options_digest_init_done = true;
         }
         if (!c->c2.did_pre_pull_restore)
         {
+            msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
             pre_pull_restore(&c->options, &c->c2.gc);
             c->c2.did_pre_pull_restore = true;
         }
@@ -825,8 +837,10 @@ process_incoming_push_reply(struct context *c,
                                option_types_found,
                                c->c2.es))
         {
+            msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
             push_update_digest(c->c2.pulled_options_state, &buf_orig,
                                &c->options);
+            msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==] push.continue:%d", __FILE__, __LINE__, __FUNCTION__, c->options.push_continuation);
             switch (c->options.push_continuation)
             {
                 case 0:
@@ -850,7 +864,9 @@ process_incoming_push_reply(struct context *c,
     {
         ret = PUSH_MSG_REPLY;
     }
-    /* show_settings (&c->options); */
+    msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
+    show_settings (&c->options);
+    msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
     return ret;
 }
 
@@ -865,12 +881,14 @@ process_incoming_push_msg(struct context *c,
 
     if (buf_string_compare_advance(&buf, "PUSH_REQUEST"))
     {
+        msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
         c->c2.push_request_received = true;
         return process_incoming_push_request(c);
     }
     else if (honor_received_options
              && buf_string_compare_advance(&buf, push_reply_cmd))
     {
+        msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
         return process_incoming_push_reply(c, permission_mask,
                                            option_types_found, &buf);
     }

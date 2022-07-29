@@ -792,7 +792,7 @@ tunnel_server_tcp(struct context *top)
     context_clear_2(top);
 
     /* initialize top-tunnel instance */
-    init_instance_handle_signals(top, top->es, CC_HARD_USR1_TO_HUP);
+    init_instance_and_handle_signals(top, top->es, CC_HARD_USR1_TO_HUP);
     if (IS_SIG(top))
     {
         return;

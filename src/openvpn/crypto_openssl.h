@@ -37,12 +37,21 @@
 #include <openssl/provider.h>
 #endif
 
+/*
+* 某一种信息摘要算法(eg:md5,sha1)
+*/
 
 /** Generic cipher key type %context. */
 typedef EVP_CIPHER cipher_kt_t;
 
 /** Generic message digest key type %context. */
 typedef EVP_MD md_kt_t;
+
+
+
+/*
+ * 三种信息摘要context，一般包含了具体某一种算法(eg:md5, sha1...)和秘钥
+ */
 
 /** Generic cipher %context. */
 typedef EVP_CIPHER_CTX cipher_ctx_t;

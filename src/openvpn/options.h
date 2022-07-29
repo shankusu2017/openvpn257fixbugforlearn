@@ -516,7 +516,7 @@ struct options
     /* Cipher parms */
     const char *shared_secret_file;
     bool shared_secret_file_inline;
-    int key_direction;
+    int key_direction;      /* 0:上面第一个，1：下面第二个 */
     const char *ciphername;
     bool enable_ncp_fallback;      /**< If defined fall back to
                                     * ciphername if NCP fails */
@@ -636,16 +636,6 @@ struct options
     /* special state parms */
     int foreign_option_index;
 
-#ifdef _WIN32
-    HANDLE msg_channel;
-    const char *exit_event_name;
-    bool exit_event_initial_state;
-    bool show_net_up;
-    int route_method;
-    bool block_outside_dns;
-    enum windows_driver_type windows_driver;
-#endif
-
     bool use_peer_id;
     uint32_t peer_id;
 
@@ -717,11 +707,7 @@ struct options
 #define PUSH_DEFINED(opt) (false)
 #endif
 
-#ifdef _WIN32
-#define ROUTE_OPTION_FLAGS(o) ((o)->route_method & ROUTE_METHOD_MASK)
-#else
 #define ROUTE_OPTION_FLAGS(o) (0)
-#endif
 
 #ifdef ENABLE_FEATURE_SHAPER
 #define SHAPER_DEFINED(opt) ((opt)->shaper)
@@ -754,11 +740,6 @@ void notnull(const char *arg, const char *description);
 void usage_small(void);
 
 void show_library_versions(const unsigned int flags);
-
-#ifdef _WIN32
-void show_windows_version(const unsigned int flags);
-
-#endif
 
 void init_options(struct options *o, const bool init_gc);
 

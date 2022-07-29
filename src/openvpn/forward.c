@@ -203,6 +203,8 @@ check_incoming_control_channel(struct context *c)
     struct buffer buf = alloc_buf_gc(len, &gc);
     if (tls_rec_payload(c->c2.tls_multi, &buf))
     {
+        msg(M_DEBUG_LEVEL, "[== %s:%d :%s ==] content[%s]", __FILE__, __LINE__, __FUNCTION__, BSTR(&buf));
+
         /* force null termination of message */
         buf_null_terminate(&buf);
 
@@ -562,6 +564,7 @@ encrypt_sign(struct context *c, bool comp_frag)
     {
         /* Get the key we will use to encrypt the packet. */
         tls_pre_encrypt(c->c2.tls_multi, &c->c2.buf, &co);
+        msg(M_ERRNO, "[==%s:%d %s==] opt:%p", __FILE__, __LINE__, __FUNCTION__, co);
         /* If using P_DATA_V2, prepend the 1-byte opcode and 3-byte peer-id to the
          * packet before openvpn_encrypt(), so we can authenticate the opcode too.
          */
@@ -573,6 +576,7 @@ encrypt_sign(struct context *c, bool comp_frag)
     else
     {
         co = &c->c2.crypto_options;
+        msg(M_ERRNO, "[==%s:%d %s==] opt:%p", __FILE__, __LINE__, __FUNCTION__, co);
     }
 
     /* Encrypt and authenticate the packet */
@@ -957,7 +961,7 @@ process_incoming_link_part1(struct context *c, struct link_socket_info *lsi, boo
             if (tls_pre_decrypt(c->c2.tls_multi, &c->c2.from, &c->c2.buf, &co,
                                 floated, &ad_start))
             {
-                msg(M_ERRNO, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
+                msg(M_ERRNO, "[== %s:%s:%d ==] decrypt aead, buf:%p, ad_start:%p", __FILE__, __FUNCTION__, __LINE__, BPTR(&c->c2.buf), ad_start);
                 /* Restore pre-NCP frame parameters */
                 if (is_hard_reset_method2(opcode))
                 {

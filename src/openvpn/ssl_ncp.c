@@ -95,6 +95,8 @@ tls_peer_supports_ncp(const char *peer_info)
 char *
 mutate_ncp_cipher_list(const char *list, struct gc_arena *gc)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+    
     bool error_found = false;
 
     struct buffer new_list  = alloc_buf(MAX_NCP_CIPHERS_LENGTH);
@@ -174,6 +176,8 @@ mutate_ncp_cipher_list(const char *list, struct gc_arena *gc)
 bool
 tls_item_in_cipher_list(const char *item, const char *list)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     char *tmp_ciphers = string_alloc(list, NULL);
     char *tmp_ciphers_orig = tmp_ciphers;
 
@@ -194,6 +198,8 @@ tls_item_in_cipher_list(const char *item, const char *list)
 const char *
 tls_peer_ncp_list(const char *peer_info, struct gc_arena *gc)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+    
     /* Check if the peer sends the IV_CIPHERS list */
     const char *ncp_ciphers_start;
     if (peer_info && (ncp_ciphers_start = strstr(peer_info, "IV_CIPHERS=")))
@@ -228,7 +234,9 @@ tls_peer_ncp_list(const char *peer_info, struct gc_arena *gc)
 char *
 ncp_get_best_cipher(const char *server_list, const char *peer_info,
                     const char *remote_cipher, struct gc_arena *gc)
-{
+{    
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+    
     /*
      * The gc of the parameter is tied to the VPN session, create a
      * short lived gc arena that is only valid for the duration of
@@ -282,6 +290,8 @@ ncp_get_best_cipher(const char *server_list, const char *peer_info,
 static bool
 tls_poor_mans_ncp(struct options *o, const char *remote_ciphername)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (remote_ciphername
         && tls_item_in_cipher_list(remote_ciphername, o->ncp_ciphers))
     {
@@ -295,6 +305,8 @@ tls_poor_mans_ncp(struct options *o, const char *remote_ciphername)
 bool
 check_pull_client_ncp(struct context *c, const int found)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (found & OPT_P_NCP)
     {
         msg(D_PUSH, "OPTIONS IMPORT: data channel crypto options modified");

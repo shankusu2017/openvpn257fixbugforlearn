@@ -50,6 +50,8 @@ static const uint8_t TLS_CRYPT_METADATA_TYPE_TIMESTAMP      = 0x01;
 static struct key_type
 tls_crypt_kt(void)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     struct key_type kt;
     kt.cipher = cipher_kt_get("AES-256-CTR");
     kt.digest = md_kt_get("SHA256");
@@ -81,6 +83,8 @@ void
 tls_crypt_init_key(struct key_ctx_bi *key, const char *key_file,
                    bool key_inline, bool tls_server)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     const int key_direction = tls_server ?
                               KEY_DIRECTION_NORMAL : KEY_DIRECTION_INVERSE;
     struct key_type kt = tls_crypt_kt();
@@ -106,6 +110,8 @@ bool
 tls_crypt_wrap(const struct buffer *src, struct buffer *dst,
                struct crypto_options *opt)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     const struct key_ctx *ctx = &opt->key_ctx_bi.encrypt;
     struct gc_arena gc;
 
@@ -183,6 +189,8 @@ bool
 tls_crypt_unwrap(const struct buffer *src, struct buffer *dst,
                  struct crypto_options *opt)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     static const char error_prefix[] = "tls-crypt unwrap error";
     const struct key_ctx *ctx = &opt->key_ctx_bi.decrypt;
     struct gc_arena gc;
@@ -282,6 +290,8 @@ static inline void
 tls_crypt_v2_load_client_key(struct key_ctx_bi *key, const struct key2 *key2,
                              bool tls_server)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     const int key_direction = tls_server ?
                               KEY_DIRECTION_NORMAL : KEY_DIRECTION_INVERSE;
     struct key_type kt = tls_crypt_kt();
@@ -297,6 +307,8 @@ void
 tls_crypt_v2_init_client_key(struct key_ctx_bi *key, struct buffer *wkc_buf,
                              const char *key_file, bool key_inline)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     struct buffer client_key = alloc_buf(TLS_CRYPT_V2_CLIENT_KEY_LEN
                                          + TLS_CRYPT_V2_MAX_WKC_LEN);
 
@@ -322,6 +334,8 @@ void
 tls_crypt_v2_init_server_key(struct key_ctx *key_ctx, bool encrypt,
                              const char *key_file, bool key_inline)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     struct key srv_key;
     struct buffer srv_key_buf;
 
@@ -347,6 +361,8 @@ tls_crypt_v2_wrap_client_key(struct buffer *wkc,
                              const struct buffer *src_metadata,
                              struct key_ctx *server_key, struct gc_arena *gc)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     cipher_ctx_t *cipher_ctx = server_key->cipher;
     struct buffer work = alloc_buf_gc(TLS_CRYPT_V2_MAX_WKC_LEN
                                       + cipher_ctx_block_size(cipher_ctx), gc);
@@ -403,6 +419,8 @@ tls_crypt_v2_unwrap_client_key(struct key2 *client_key, struct buffer *metadata,
                                struct buffer wrapped_client_key,
                                struct key_ctx *server_key)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     const char *error_prefix = __func__;
     bool ret = false;
     struct gc_arena gc = gc_new();
@@ -511,6 +529,8 @@ static bool
 tls_crypt_v2_verify_metadata(const struct tls_wrap_ctx *ctx,
                              const struct tls_options *opt)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     bool ret = false;
     struct gc_arena gc = gc_new();
     const char *tmp_file = NULL;
@@ -571,6 +591,8 @@ tls_crypt_v2_extract_client_key(struct buffer *buf,
                                 struct tls_wrap_ctx *ctx,
                                 const struct tls_options *opt)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (!ctx->tls_crypt_v2_server_key.cipher)
     {
         msg(D_TLS_ERRORS,
@@ -640,6 +662,8 @@ tls_crypt_v2_write_client_key_file(const char *filename,
                                    const char *server_key_file,
                                    bool server_key_inline)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+    
     struct gc_arena gc = gc_new();
     struct key_ctx server_key = { 0 };
     struct buffer client_key_pem = { 0 };

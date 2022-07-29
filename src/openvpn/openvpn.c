@@ -65,7 +65,7 @@ tunnel_point_to_point(struct context *c)
 
     /* initialize tunnel instance */
     msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
-    init_instance_handle_signals(c, c->es, CC_HARD_USR1_TO_HUP);
+    init_instance_and_handle_signals(c, c->es, CC_HARD_USR1_TO_HUP);
     if (IS_SIG(c))
     {
         return;
@@ -157,13 +157,6 @@ int
 openvpn_main(int argc, char *argv[])
 {
     struct context c;
-
-#if PEDANTIC
-    fprintf(stderr, "Sorry, I was built with --enable-pedantic and I am incapable of doing any real work!\n");
-    return 1;
-#endif
-
-
     CLEAR(c);
 
     /* signify first time for components which can
@@ -290,11 +283,9 @@ openvpn_main(int argc, char *argv[])
 
             /* finish context init */
             context_init_1(&c);
-
             do
             {
                 /* run tunnel depending on mode */
-                msg(M_ERRNO, "%s:%s:%d c.options.mode:%d", __FILE__, __FUNCTION__, __LINE__, c.options.mode);
                 switch (c.options.mode)
                 {
                     case MODE_POINT_TO_POINT:
@@ -320,8 +311,7 @@ openvpn_main(int argc, char *argv[])
 
                 /* pass restart status to management subsystem */
                 signal_restart_status(c.sig);
-            }
-            while (c.sig->signal_received == SIGUSR1);
+               }  while (c.sig->signal_received == SIGUSR1);
 
             env_set_destroy(c.es);
             uninit_options(&c.options);

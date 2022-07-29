@@ -507,7 +507,8 @@ format_hex_ex(const uint8_t *data, int size, int maxoutput,
 static inline char *
 format_hex(const uint8_t *data, int size, int maxoutput, struct gc_arena *gc)
 {
-    return format_hex_ex(data, size, maxoutput, 4, " ", gc);
+    hex_out_from_addr(data, size);
+    //return format_hex_ex(data, size, maxoutput, 4, " ", gc);
 }
 
 /*
@@ -1210,6 +1211,8 @@ struct buffer buffer_read_from_file(const char *filename, struct gc_arena *gc);
  * @param buf 
  */
 char *buffer_hex_out(struct buffer *buf);
+
+char *hex_out_from_addr(char *addr, int sz);
 
 void buffer_10_out(struct buffer *buf);
 

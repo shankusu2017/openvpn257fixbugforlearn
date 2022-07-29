@@ -786,6 +786,14 @@ cipher_kt_mode_ofb_cfb(const cipher_kt_t *cipher)
            && !(EVP_CIPHER_flags(cipher) & EVP_CIPH_FLAG_AEAD_CIPHER);
 }
 
+
+int
+cipher_nid(const cipher_kt_t *cipher)
+{
+    return EVP_CIPHER_nid(cipher);
+}
+
+
 bool
 cipher_kt_mode_aead(const cipher_kt_t *cipher)
 {
@@ -815,8 +823,10 @@ cipher_kt_mode_aead(const cipher_kt_t *cipher)
 cipher_ctx_t *
 cipher_ctx_new(void)
 {
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     check_malloc_return(ctx);
+    msg(M_ERRNO, "%s:%s:%d", __FILE__, __FUNCTION__, __LINE__);
     return ctx;
 }
 
@@ -830,6 +840,7 @@ void
 cipher_ctx_init(EVP_CIPHER_CTX *ctx, const uint8_t *key, int key_len,
                 const EVP_CIPHER *kt, int enc)
 {
+    msg(M_ERRNO, "[%s:%d %s]", __FILE__, __LINE__, __FUNCTION__);
     ASSERT(NULL != kt && NULL != ctx);
 
     EVP_CIPHER_CTX_reset(ctx);
@@ -1086,7 +1097,11 @@ md_ctx_size(const EVP_MD_CTX *ctx)
 void
 md_ctx_update(EVP_MD_CTX *ctx, const uint8_t *src, int src_len)
 {
-    EVP_DigestUpdate(ctx, src, src_len);
+    int ret = EVP_DigestUpdate(ctx, src, src_len);
+    char buf[65536] = {0};
+    buf[src_len] = 0;
+    snprintf(buf, src_len, "%s", src);
+    msg(M_DEBUG_LEVEL, "[== %s:%d: %s ==] md_ctx_update.content:[%s], ret:%d", __FILE__, __LINE__, __FUNCTION__,  buf, ret);
 }
 
 void
@@ -1122,6 +1137,8 @@ void
 hmac_ctx_init(HMAC_CTX *ctx, const uint8_t *key, int key_len,
               const EVP_MD *kt)
 {
+    msg(M_ERRNO, "%s:%s :%d key_len:%d", __FILE__, __FUNCTION__, __LINE__, key_len);
+
     ASSERT(NULL != kt && NULL != ctx);
 
     HMAC_CTX_reset(ctx);

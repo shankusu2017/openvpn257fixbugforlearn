@@ -204,7 +204,7 @@ struct context_1
     /**< Username and password for
      *   authentication. */
 
-    const char *ciphername;     /**< Data channel cipher from config file */
+    const char *ciphername;     /**< Data channel cipher from config file,初始化时，从options拷贝到此 */
     const char *authname;       /**< Data channel auth from config file */
     int keysize;                /**< Data channel keysize from config file */
 #endif

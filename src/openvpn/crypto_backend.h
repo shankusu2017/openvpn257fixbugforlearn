@@ -714,4 +714,7 @@ const char *translate_cipher_name_from_openvpn(const char *cipher_name);
  */
 const char *translate_cipher_name_to_openvpn(const char *cipher_name);
 
+int
+cipher_nid(const cipher_kt_t *cipher);
+
 #endif /* CRYPTO_BACKEND_H_ */

@@ -693,6 +693,7 @@ restore_ncp_options(struct context *c)
     c->options.keysize = c->c1.keysize;
 }
 
+// 初始化程序级别的变量
 void
 context_init_1(struct context *c)
 {
@@ -714,20 +715,6 @@ context_init_1(struct context *c)
             pkcs11_addProvider(c->options.pkcs11_providers[i], c->options.pkcs11_protected_authentication[i],
                                c->options.pkcs11_private_mode[i], c->options.pkcs11_cert_private[i]);
         }
-    }
-#endif
-
-#if 0 /* test get_user_pass with GET_USER_PASS_NEED_OK flag */
-    {
-        /*
-         * In the management interface, you can okay the request by entering "needok token-insertion-request ok"
-         */
-        struct user_pass up;
-        CLEAR(up);
-        strcpy(up.username, "Please insert your cryptographic token"); /* put the high-level message in up.username */
-        get_user_pass(&up, NULL, "token-insertion-request", GET_USER_PASS_MANAGEMENT|GET_USER_PASS_NEED_OK);
-        msg(M_INFO, "RET:%s", up.password); /* will return the third argument to management interface
-                                             * 'needok' command, usually 'ok' or 'cancel'. */
     }
 #endif
 
@@ -1690,6 +1677,11 @@ do_route(const struct options *options,
          struct env_set *es,
          openvpn_net_ctx_t *ctx)
 {
+    {  
+        if (options->client) {
+            return;// 当前的测试主机无法成功执行对应的ifconfig命令
+        }
+    }
     if (!options->route_noexec && ( route_list || route_ipv6_list ) )
     {
         add_routes(route_list, route_ipv6_list, tt, ROUTE_OPTION_FLAGS(options),
@@ -1719,19 +1711,6 @@ do_route(const struct options *options,
         openvpn_run_script(&argv, es, 0, "--route-up");
         argv_free(&argv);
     }
-
-#ifdef _WIN32
-    if (options->show_net_up)
-    {
-        show_routes(M_INFO|M_NOPREFIX);
-        show_adapters(M_INFO|M_NOPREFIX);
-    }
-    else if (check_debug_level(D_SHOW_NET))
-    {
-        show_routes(D_SHOW_NET|M_NOPREFIX);
-        show_adapters(D_SHOW_NET|M_NOPREFIX);
-    }
-#endif
 }
 
 /*
@@ -1772,8 +1751,15 @@ do_init_tun(struct context *c)
 static bool
 do_open_tun(struct context *c)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
     struct gc_arena gc = gc_new();
     bool ret = false;
+
+    {
+        if (c->options.client) {
+            return true;// 当前的测试主机无法成功执行对应的ifconfig命令
+        }
+    }
 
 #ifndef TARGET_ANDROID
     if (!c->c1.tuntap)
@@ -1796,11 +1782,6 @@ do_open_tun(struct context *c)
     /* initialize (but do not open) tun/tap object */
     do_init_tun(c);
 
-#ifdef _WIN32
-    /* store (hide) interactive service handle in tuntap_options */
-    c->c1.tuntap->options.msg_channel = c->options.msg_channel;
-    msg(D_ROUTE, "interactive service msg_channel=%" PRIu64, (unsigned long long) c->options.msg_channel);
-#endif
 
     /* allocate route list structure */
     do_alloc_route_list(c);
@@ -1859,6 +1840,7 @@ do_open_tun(struct context *c)
     if (!c->options.ifconfig_noexec
         && ifconfig_order() == IFCONFIG_AFTER_TUN_OPEN)
     {
+        msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
         do_ifconfig(c->c1.tuntap, c->c1.tuntap->actual_name,
                     TUN_MTU_SIZE(&c->c2.frame), c->c2.es, &c->net_ctx);
     }
@@ -1868,9 +1850,6 @@ do_open_tun(struct context *c)
                 c->plugins,
                 OPENVPN_PLUGIN_UP,
                 c->c1.tuntap->actual_name,
-#ifdef _WIN32
-                c->c1.tuntap->adapter_index,
-#endif
                 dev_type_string(c->options.dev, c->options.dev_type),
                 TUN_MTU_SIZE(&c->c2.frame),
                 EXPANDED_SIZE(&c->c2.frame),
@@ -1880,17 +1859,6 @@ do_open_tun(struct context *c)
                 NULL,
                 "up",
                 c->c2.es);
-
-#if defined(_WIN32)
-    if (c->options.block_outside_dns)
-    {
-        dmsg(D_LOW, "Blocking outside DNS");
-        if (!win_wfp_block_dns(c->c1.tuntap->adapter_index, c->options.msg_channel))
-        {
-            msg(M_FATAL, "Blocking DNS failed!");
-        }
-    }
-#endif
 
     /* possibly add routes */
     if ((route_order() == ROUTE_AFTER_TUN) && (!c->options.route_delay_defined))
@@ -1928,9 +1896,6 @@ else
                     c->plugins,
                     OPENVPN_PLUGIN_UP,
                     c->c1.tuntap->actual_name,
-#ifdef _WIN32
-                    c->c1.tuntap->adapter_index,
-#endif
                     dev_type_string(c->options.dev, c->options.dev_type),
                     TUN_MTU_SIZE(&c->c2.frame),
                     EXPANDED_SIZE(&c->c2.frame),
@@ -1941,16 +1906,6 @@ else
                     "up",
                     c->c2.es);
     }
-#if defined(_WIN32)
-    if (c->options.block_outside_dns)
-    {
-        dmsg(D_LOW, "Blocking outside DNS");
-        if (!win_wfp_block_dns(c->c1.tuntap->adapter_index, c->options.msg_channel))
-        {
-            msg(M_FATAL, "Blocking DNS failed!");
-        }
-    }
-#endif
 
 }
 #endif /* ifndef TARGET_ANDROID */
@@ -2143,6 +2098,7 @@ options_hash_changed_or_zero(const struct sha256_digest *a,
 bool
 do_up(struct context *c, bool pulled_options, unsigned int option_types_found)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d:%s ==]", __FILE__, __LINE__, __FUNCTION__);
     if (!c->c2.do_up_ran)
     {
         reset_coarse_timers(c);
@@ -2255,6 +2211,7 @@ pull_permission_mask(const struct context *c)
 bool
 do_deferred_options(struct context *c, const unsigned int found)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d: %s ==]", __FILE__, __LINE__, __FUNCTION__);
     if (found & OPT_P_MESSAGES)
     {
         init_verb_mute(c, IVM_LEVEL_1|IVM_LEVEL_2);
@@ -2365,13 +2322,27 @@ do_deferred_options(struct context *c, const unsigned int found)
             frame_fragment = &c->c2.frame_fragment;
         }
 #endif
-
+        msg(M_DEBUG_LEVEL, "[== %s:%d: %s ==]", __FILE__, __LINE__, __FUNCTION__);
         struct tls_session *session = &c->c2.tls_multi->session[TM_ACTIVE];
+        {
+            char buf[65536] = {0};
+            sprintf(buf, "%s:%d %s", __FUNCTION__, __LINE__,  "session->key[KS_PRIMARY].crypto_options.key_ctx_bi");
+            key_ctx_bi_print(buf, &session->key[KS_PRIMARY].crypto_options.key_ctx_bi);
+            sprintf(buf, "%s:%d %s", __FUNCTION__, __LINE__,  "session->tls_wrap.opt.key_ctx_bi");
+            key_ctx_bi_print(buf, &session->tls_wrap.opt.key_ctx_bi);
+        }
         if (!tls_session_update_crypto_params(session, &c->options, &c->c2.frame,
                                               frame_fragment))
         {
             msg(D_TLS_ERRORS, "OPTIONS ERROR: failed to import crypto options");
             return false;
+        }
+        {
+            char buf[65536] = {0};
+            sprintf(buf, "%s:%d %s", __FUNCTION__, __LINE__,  "ession->key[KS_PRIMARY].crypto_options.key_ctx_bi");
+            key_ctx_bi_print(buf, &session->key[KS_PRIMARY].crypto_options.key_ctx_bi);
+            sprintf(buf, "%s:%d %s", __FUNCTION__, __LINE__,  "session->tls_wrap.opt.key_ctx_bi");
+            key_ctx_bi_print(buf, &session->tls_wrap.opt.key_ctx_bi);
         }
     }
 
@@ -2646,7 +2617,6 @@ do_init_tls_wrap_key(struct context *c)
                 "algorithm specified ('%s')", options->authname);
         }
 
-        msg(M_ERRNO, "2222222222222222222222222222222");
         msg(M_ERRNO, "%s:%s:%d key.file.path:%s", __FILE__, __FUNCTION__, __LINE__, options->ce.tls_auth_file);
         crypto_read_openvpn_key(&c->c1.ks.tls_auth_key_type,
                                 &c->c1.ks.tls_wrap_key,
@@ -2654,15 +2624,18 @@ do_init_tls_wrap_key(struct context *c)
                                 options->ce.tls_auth_file_inline,
                                 options->ce.key_direction,
                                 "Control Channel Authentication", "tls-auth");
+        msg(M_ERRNO, "%s:%s:%d key.file.path:%s", __FILE__, __FUNCTION__, __LINE__, options->ce.tls_auth_file);
     }
 
     /* TLS handshake encryption+authentication (--tls-crypt) */
     if (options->ce.tls_crypt_file)
     {
+        
         tls_crypt_init_key(&c->c1.ks.tls_wrap_key,
                            options->ce.tls_crypt_file,
                            options->ce.tls_crypt_file_inline,
                            options->tls_server);
+        msg(M_ERRNO, "%s:%s:%d key.file.path:%s", __FILE__, __FUNCTION__, __LINE__, options->ce.tls_auth_file);
     }
 
     /* tls-crypt with client-specific keys (--tls-crypt-v2) */
@@ -2670,16 +2643,20 @@ do_init_tls_wrap_key(struct context *c)
     {
         if (options->tls_server)
         {
+            msg(M_ERRNO, "%s:%s:%d key.file.path:%s", __FILE__, __FUNCTION__, __LINE__, options->ce.tls_auth_file);   
             tls_crypt_v2_init_server_key(&c->c1.ks.tls_crypt_v2_server_key,
                                          true, options->ce.tls_crypt_v2_file,
                                          options->ce.tls_crypt_v2_file_inline);
+            msg(M_ERRNO, "%s:%s:%d key.file.path:%s", __FILE__, __FUNCTION__, __LINE__, options->ce.tls_auth_file);
         }
         else
         {
+            msg(M_ERRNO, "%s:%s:%d key.file.path:%s", __FILE__, __FUNCTION__, __LINE__, options->ce.tls_auth_file);
             tls_crypt_v2_init_client_key(&c->c1.ks.tls_wrap_key,
                                          &c->c1.ks.tls_crypt_v2_wkc,
                                          options->ce.tls_crypt_v2_file,
                                          options->ce.tls_crypt_v2_file_inline);
+            msg(M_ERRNO, "%s:%s:%d key.file.path:%s", __FILE__, __FUNCTION__, __LINE__, options->ce.tls_auth_file);
         }
     }
 
@@ -4105,7 +4082,7 @@ uninit_management_callback(void)
  * signal settings.
  */
 void
-init_instance_handle_signals(struct context *c, const struct env_set *env, const unsigned int flags)
+init_instance_and_handle_signals(struct context *c, const struct env_set *env, const unsigned int flags)
 {
     pre_init_signal_catch();
     msg(M_ERRNO, "%s:%s:%d flags:%d", __FILE__, __FUNCTION__, __LINE__, flags);
@@ -4303,8 +4280,9 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
         {
             crypto_flags = CF_INIT_TLS_MULTI;
         }
-        msg(M_ERRNO, "%s:%s:%d c->mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
+        msg(M_ERRNO, "%s:%s:%d c->mode:%d ================================", __FILE__, __FUNCTION__, __LINE__, c->mode);
         do_init_crypto(c, crypto_flags);
+        msg(M_ERRNO, "%s:%s:%d c->mode:%d ================================", __FILE__, __FUNCTION__, __LINE__, c->mode);
         if (IS_SIG(c) && !child)
         {
             goto sig;
@@ -4324,7 +4302,7 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
 
     /* initialize TLS MTU variables */
     do_init_frame_tls(c);
-
+    msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
     /* init workspace buffers whose size is derived from frame size */
     if (c->mode == CM_P2P || c->mode == CM_CHILD_TCP)
     {
@@ -4352,30 +4330,37 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
     /* initialize tun/tap device object,
      * open tun/tap device, ifconfig, run up script, etc. */
     if (!(options->up_delay || PULL_DEFINED(options)) && (c->mode == CM_P2P || c->mode == CM_TOP))
-    {
+    {   
+        msg(M_ERRNO, "[%s:%s:%d] mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
         c->c2.did_open_tun = do_open_tun(c);
+        msg(M_ERRNO, "[%s:%s:%d] mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
     }
 
     c->c2.frame_initial = c->c2.frame;
 
     /* print MTU info */
     do_print_data_channel_mtu_parms(c);
-
+    msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
     /* get local and remote options compatibility strings */
     if (c->mode == CM_P2P || child)
-    {
-        do_compute_occ_strings(c);
+    {   
+        msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
+        do_compute_occ_strings(c); 
+        msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
     }
 
     /* initialize output speed limiter */
     if (c->mode == CM_P2P)
-    {
-        do_init_traffic_shaper(c);
+    {   
+        msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
+        do_init_traffic_shaper(c); 
+        msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
     }
 
     /* do one-time inits, and possibly become a daemon here */
+    msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
     do_init_first_time(c);
-
+    msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
 #ifdef ENABLE_PLUGIN
     /* initialize plugins */
     if (c->mode == CM_P2P || c->mode == CM_TOP)
@@ -4386,7 +4371,6 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
 
     /* initialise connect timeout timer */
     do_init_server_poll_timeout(c);
-    msg(M_ERRNO, "[%s:%s:%d] mode:%d", __FILE__, __FUNCTION__, __LINE__, c->mode);
     /* finalize the TCP/UDP socket */
     if (c->mode == CM_P2P || c->mode == CM_TOP || c->mode == CM_CHILD_TCP)
     {
@@ -4400,7 +4384,7 @@ init_instance(struct context *c, const struct env_set *env, const unsigned int f
      * May be delayed by --client, --pull, or --up-delay.
      */
     do_uid_gid_chroot(c, c->c2.did_open_tun);
-
+    msg(M_ERRNO, "[%s:%s:%d]", __FILE__, __FUNCTION__, __LINE__);
     /* initialize timers */
     if (c->mode == CM_P2P || child)
     {

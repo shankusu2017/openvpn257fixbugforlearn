@@ -141,6 +141,35 @@ time_string(time_t t, int usec, bool show_usec, struct gc_arena *gc)
     return BSTR(&out);
 }
 
+const char *
+time_string2(time_t t, int usec, bool show_usec, struct gc_arena *gc)
+{
+    struct buffer out = alloc_buf_gc(64, gc);
+    struct timeval tv;
+
+    if (t)
+    {
+        tv.tv_sec = t;
+        tv.tv_usec = usec;
+    }
+    else
+    {
+        gettimeofday(&tv, NULL);
+    }
+
+    t = tv.tv_sec;
+    struct tm *tm = localtime(&t);
+
+    buf_printf(&out, "%02d:%02d:%02d",tm->tm_hour, tm->tm_min, tm->tm_sec);
+
+    if (show_usec && tv.tv_usec)
+    {
+        buf_printf(&out, " us=%ld", (long)tv.tv_usec);
+    }
+
+    return BSTR(&out);
+}
+
 /*
  * Limit the frequency of an event stream.
  *

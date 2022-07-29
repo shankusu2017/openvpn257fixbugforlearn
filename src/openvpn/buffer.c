@@ -1421,3 +1421,21 @@ buffer_hex_out(struct buffer *buf)
 
     return cache;
 }
+
+
+char *
+hex_out_from_addr(char *addr, int sz)
+{
+    static char cache[20480];
+    cache[sz*2] = 0;
+
+    for (int i = 0; i < sz; i++) {
+        if (0 == (uint8_t)(addr[i])) {
+            snprintf(cache + i * 2, sizeof(cache) - i * 2 - 1, "00");
+        } else {
+            snprintf(cache + i * 2, sizeof(cache) - i * 2 - 1, "%02X ", (uint8_t)(addr[i]));
+        }
+    }
+
+    return cache;
+}

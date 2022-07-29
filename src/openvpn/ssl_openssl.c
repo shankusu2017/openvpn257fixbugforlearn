@@ -334,7 +334,7 @@ tls_ctx_set_tls_versions(struct tls_root_ctx *ctx, unsigned int ssl_flags)
 bool
 tls_ctx_set_options(struct tls_root_ctx *ctx, unsigned int ssl_flags)
 {
-    msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==]", __FILE__, __FUNCTION__, __LINE__);
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
 
     ASSERT(NULL != ctx);
 
@@ -384,6 +384,7 @@ tls_ctx_set_options(struct tls_root_ctx *ctx, unsigned int ssl_flags)
 void
 convert_tls_list_to_openssl(char *openssl_ciphers, size_t len,const char *ciphers)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
     /* Parse supplied cipher list and pass on to OpenSSL */
     size_t begin_of_cipher, end_of_cipher;
 
@@ -1932,6 +1933,8 @@ bio_read(BIO *bio, struct buffer *buf, int maxlen, const char *desc)
 void
 key_state_ssl_init(struct key_state_ssl *ks_ssl, const struct tls_root_ctx *ssl_ctx, bool is_server, struct tls_session *session)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(NULL != ssl_ctx);
     ASSERT(ks_ssl);
     CLEAR(*ks_ssl);
@@ -1987,6 +1990,8 @@ key_state_ssl_free(struct key_state_ssl *ks_ssl)
 int
 key_state_write_plaintext(struct key_state_ssl *ks_ssl, struct buffer *buf)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int ret = 0;
     perf_push(PERF_BIO_WRITE_PLAINTEXT);
 
@@ -2006,6 +2011,8 @@ key_state_write_plaintext(struct key_state_ssl *ks_ssl, struct buffer *buf)
 int
 key_state_write_plaintext_const(struct key_state_ssl *ks_ssl, const uint8_t *data, int len)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+    
     int ret = 0;
     perf_push(PERF_BIO_WRITE_PLAINTEXT);
 
@@ -2021,6 +2028,8 @@ int
 key_state_read_ciphertext(struct key_state_ssl *ks_ssl, struct buffer *buf,
                           int maxlen)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int ret = 0;
     perf_push(PERF_BIO_READ_CIPHERTEXT);
 
@@ -2036,7 +2045,8 @@ key_state_read_ciphertext(struct key_state_ssl *ks_ssl, struct buffer *buf,
 int
 key_state_write_ciphertext(struct key_state_ssl *ks_ssl, struct buffer *buf)
 {
-    msg(M_DEBUG_LEVEL, "[== %s:%s:%d ==] key_state_write_ciphertext.start buf.len:%d", __FILE__, __FUNCTION__, __LINE__, BLEN(buf));
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int ret = 0;
     perf_push(PERF_BIO_WRITE_CIPHERTEXT);
 
@@ -2054,6 +2064,8 @@ int
 key_state_read_plaintext(struct key_state_ssl *ks_ssl, struct buffer *buf,
                          int maxlen)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int len1 = BLEN(buf);
     int ret = 0;
     perf_push(PERF_BIO_READ_PLAINTEXT);

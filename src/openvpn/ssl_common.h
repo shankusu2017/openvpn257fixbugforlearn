@@ -262,7 +262,7 @@ struct tls_options
 
     /* from command line */
     bool replay;
-    bool single_session;
+    bool single_session;        /* 单个链接，只运行单个会话（无法实现平滑过度功能？） */
     bool disable_occ;
     int mode;
     bool pull;

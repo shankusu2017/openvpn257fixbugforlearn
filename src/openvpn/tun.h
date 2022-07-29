@@ -41,15 +41,6 @@
 #include "networking.h"
 #include "ring_buffer.h"
 
-#ifdef _WIN32
-#define WINTUN_COMPONENT_ID "wintun"
-
-enum windows_driver_type {
-    WINDOWS_DRIVER_UNSPECIFIED,
-    WINDOWS_DRIVER_TAP_WINDOWS6,
-    WINDOWS_DRIVER_WINTUN
-};
-#endif
 
 #if defined(_WIN32) || defined(TARGET_ANDROID)
 
@@ -71,9 +62,6 @@ struct tuntap_options {
 #define IPW32_SET_N            5
     int ip_win32_type;
 
-#ifdef _WIN32
-    HANDLE msg_channel;
-#endif
 
     /* --ip-win32 dynamic options */
     bool dhcp_masq_custom_offset;
@@ -176,33 +164,7 @@ struct tuntap
     struct in6_addr remote_ipv6;
     int netbits_ipv6;
 
-#ifdef _WIN32
-    HANDLE hand;
-    struct overlapped_io reads;
-    struct overlapped_io writes;
-    struct rw_handle rw_handle;
-
-    /* used for setting interface address via IP Helper API
-     * or DHCP masquerade */
-    bool ipapi_context_defined;
-    ULONG ipapi_context;
-    ULONG ipapi_instance;
-    in_addr_t adapter_netmask;
-
-    /* Windows adapter index for TAP-Windows adapter,
-     * ~0 if undefined */
-    DWORD adapter_index;
-
-    enum windows_driver_type windows_driver;
-    int standby_iter;
-
-    HANDLE wintun_send_ring_handle;
-    HANDLE wintun_receive_ring_handle;
-    struct tun_ring *wintun_send_ring;
-    struct tun_ring *wintun_receive_ring;
-#else  /* ifdef _WIN32 */
     int fd; /* file descriptor for TUN/TAP dev */
-#endif /* ifdef _WIN32 */
 
 #ifdef TARGET_SOLARIS
     int ip_fd;
@@ -222,26 +184,8 @@ struct tuntap
 static inline bool
 tuntap_defined(const struct tuntap *tt)
 {
-#ifdef _WIN32
-    return tt && tt->hand != NULL;
-#else
     return tt && tt->fd >= 0;
-#endif
 }
-
-#ifdef _WIN32
-static inline bool
-tuntap_is_wintun(struct tuntap *tt)
-{
-    return tt && tt->windows_driver == WINDOWS_DRIVER_WINTUN;
-}
-
-static inline bool
-tuntap_ring_empty(struct tuntap *tt)
-{
-    return tuntap_is_wintun(tt) && (tt->wintun_send_ring->head == tt->wintun_send_ring->tail);
-}
-#endif
 
 /*
  * Function prototypes
@@ -372,300 +316,6 @@ route_order(void)
 }
 
 
-#ifdef _WIN32
-
-struct tap_reg
-{
-    const char *guid;
-    enum windows_driver_type windows_driver;
-    struct tap_reg *next;
-};
-
-struct panel_reg
-{
-    const char *name;
-    const char *guid;
-    struct panel_reg *next;
-};
-
-struct device_instance_id_interface
-{
-    const char *net_cfg_instance_id;
-    const char *device_interface_list;
-    struct device_instance_id_interface *next;
-};
-
-int ascii2ipset(const char *name);
-
-const char *ipset2ascii(int index);
-
-const char *ipset2ascii_all(struct gc_arena *gc);
-
-void verify_255_255_255_252(in_addr_t local, in_addr_t remote);
-
-const IP_ADAPTER_INFO *get_adapter_info_list(struct gc_arena *gc);
-
-const IP_ADAPTER_INFO *get_tun_adapter(const struct tuntap *tt, const IP_ADAPTER_INFO *list);
-
-const IP_ADAPTER_INFO *get_adapter_info(DWORD index, struct gc_arena *gc);
-
-const IP_PER_ADAPTER_INFO *get_per_adapter_info(const DWORD index, struct gc_arena *gc);
-
-const IP_ADAPTER_INFO *get_adapter(const IP_ADAPTER_INFO *ai, DWORD index);
-
-bool is_adapter_up(const struct tuntap *tt, const IP_ADAPTER_INFO *list);
-
-bool is_ip_in_adapter_subnet(const IP_ADAPTER_INFO *ai, const in_addr_t ip, in_addr_t *highest_netmask);
-
-DWORD adapter_index_of_ip(const IP_ADAPTER_INFO *list,
-                          const in_addr_t ip,
-                          int *count,
-                          in_addr_t *netmask);
-
-void show_tap_win_adapters(int msglev, int warnlev);
-
-void show_adapters(int msglev);
-
-void tap_allow_nonadmin_access(const char *dev_node);
-
-void show_valid_win32_tun_subnets(void);
-
-const char *tap_win_getinfo(const struct tuntap *tt, struct gc_arena *gc);
-
-void tun_show_debug(struct tuntap *tt);
-
-bool dhcp_release_by_adapter_index(const DWORD adapter_index);
-
-bool dhcp_renew_by_adapter_index(const DWORD adapter_index);
-
-void fork_register_dns_action(struct tuntap *tt);
-
-void ipconfig_register_dns(const struct env_set *es);
-
-void tun_standby_init(struct tuntap *tt);
-
-bool tun_standby(struct tuntap *tt);
-
-int tun_read_queue(struct tuntap *tt, int maxsize);
-
-int tun_write_queue(struct tuntap *tt, struct buffer *buf);
-
-int tun_finalize(HANDLE h, struct overlapped_io *io, struct buffer *buf);
-
-static inline bool
-tuntap_stop(int status)
-{
-    /*
-     * This corresponds to the STATUS_NO_SUCH_DEVICE
-     * error in tapdrvr.c.
-     */
-    if (status < 0)
-    {
-        return GetLastError() == ERROR_FILE_NOT_FOUND;
-    }
-    return false;
-}
-
-static inline bool
-tuntap_abort(int status)
-{
-    /*
-     * Typically generated when driver is halted.
-     */
-    if (status < 0)
-    {
-        return GetLastError() == ERROR_OPERATION_ABORTED;
-    }
-    return false;
-}
-
-static inline int
-tun_write_win32(struct tuntap *tt, struct buffer *buf)
-{
-    int err = 0;
-    int status = 0;
-    if (overlapped_io_active(&tt->writes))
-    {
-        status = tun_finalize(tt->hand, &tt->writes, NULL);
-        if (status < 0)
-        {
-            err = GetLastError();
-        }
-    }
-    tun_write_queue(tt, buf);
-    if (status < 0)
-    {
-        SetLastError(err);
-        return status;
-    }
-    else
-    {
-        return BLEN(buf);
-    }
-}
-
-static inline int
-read_tun_buffered(struct tuntap *tt, struct buffer *buf)
-{
-    return tun_finalize(tt->hand, &tt->reads, buf);
-}
-
-static inline ULONG
-wintun_ring_packet_align(ULONG size)
-{
-    return (size + (WINTUN_PACKET_ALIGN - 1)) & ~(WINTUN_PACKET_ALIGN - 1);
-}
-
-static inline ULONG
-wintun_ring_wrap(ULONG value)
-{
-    return value & (WINTUN_RING_CAPACITY - 1);
-}
-
-static inline void
-read_wintun(struct tuntap *tt, struct buffer *buf)
-{
-    struct tun_ring *ring = tt->wintun_send_ring;
-    ULONG head = ring->head;
-    ULONG tail = ring->tail;
-    ULONG content_len;
-    struct TUN_PACKET *packet;
-    ULONG aligned_packet_size;
-
-    *buf = tt->reads.buf_init;
-    buf->len = 0;
-
-    if ((head >= WINTUN_RING_CAPACITY) || (tail >= WINTUN_RING_CAPACITY))
-    {
-        msg(M_INFO, "Wintun: ring capacity exceeded");
-        buf->len = -1;
-        return;
-    }
-
-    if (head == tail)
-    {
-        /* nothing to read */
-        return;
-    }
-
-    content_len = wintun_ring_wrap(tail - head);
-    if (content_len < sizeof(struct TUN_PACKET_HEADER))
-    {
-        msg(M_INFO, "Wintun: incomplete packet header in send ring");
-        buf->len = -1;
-        return;
-    }
-
-    packet = (struct TUN_PACKET *) &ring->data[head];
-    if (packet->size > WINTUN_MAX_PACKET_SIZE)
-    {
-        msg(M_INFO, "Wintun: packet too big in send ring");
-        buf->len = -1;
-        return;
-    }
-
-    aligned_packet_size = wintun_ring_packet_align(sizeof(struct TUN_PACKET_HEADER) + packet->size);
-    if (aligned_packet_size > content_len)
-    {
-        msg(M_INFO, "Wintun: incomplete packet in send ring");
-        buf->len = -1;
-        return;
-    }
-
-    buf_write(buf, packet->data, packet->size);
-
-    head = wintun_ring_wrap(head + aligned_packet_size);
-    ring->head = head;
-}
-
-static inline bool
-is_ip_packet_valid(const struct buffer *buf)
-{
-    const struct openvpn_iphdr *ih = (const struct openvpn_iphdr *)BPTR(buf);
-
-    if (OPENVPN_IPH_GET_VER(ih->version_len) == 4)
-    {
-        if (BLEN(buf) < sizeof(struct openvpn_iphdr))
-        {
-            return false;
-        }
-    }
-    else if (OPENVPN_IPH_GET_VER(ih->version_len) == 6)
-    {
-        if (BLEN(buf) < sizeof(struct openvpn_ipv6hdr))
-        {
-            return false;
-        }
-    }
-    else
-    {
-        return false;
-    }
-
-    return true;
-}
-
-static inline int
-write_wintun(struct tuntap *tt, struct buffer *buf)
-{
-    struct tun_ring *ring = tt->wintun_receive_ring;
-    ULONG head = ring->head;
-    ULONG tail = ring->tail;
-    ULONG aligned_packet_size;
-    ULONG buf_space;
-    struct TUN_PACKET *packet;
-
-    /* wintun marks ring as corrupted (overcapacity) if it receives invalid IP packet */
-    if (!is_ip_packet_valid(buf))
-    {
-        msg(D_LOW, "write_wintun(): drop invalid IP packet");
-        return 0;
-    }
-
-    if ((head >= WINTUN_RING_CAPACITY) || (tail >= WINTUN_RING_CAPACITY))
-    {
-        msg(M_INFO, "write_wintun(): head/tail value is over capacity");
-        return -1;
-    }
-
-    aligned_packet_size = wintun_ring_packet_align(sizeof(struct TUN_PACKET_HEADER) + BLEN(buf));
-    buf_space = wintun_ring_wrap(head - tail - WINTUN_PACKET_ALIGN);
-    if (aligned_packet_size > buf_space)
-    {
-        msg(M_INFO, "write_wintun(): ring is full");
-        return 0;
-    }
-
-    /* copy packet size and data into ring */
-    packet = (struct TUN_PACKET * )&ring->data[tail];
-    packet->size = BLEN(buf);
-    memcpy(packet->data, BPTR(buf), BLEN(buf));
-
-    /* move ring tail */
-    ring->tail = wintun_ring_wrap(tail + aligned_packet_size);
-    if (ring->alertable != 0)
-    {
-        SetEvent(tt->rw_handle.write);
-    }
-
-    return BLEN(buf);
-}
-
-static inline int
-write_tun_buffered(struct tuntap *tt, struct buffer *buf)
-{
-    if (tt->windows_driver == WINDOWS_DRIVER_WINTUN)
-    {
-        return write_wintun(tt, buf);
-    }
-    else
-    {
-        return tun_write_win32(tt, buf);
-    }
-}
-
-#else  /* ifdef _WIN32 */
-
 static inline bool
 tuntap_stop(int status)
 {
@@ -689,8 +339,6 @@ tun_standby(struct tuntap *tt)
     return true;
 }
 
-#endif /* ifdef _WIN32 */
-
 /*
  * TUN/TAP I/O wait functions
  */
@@ -698,11 +346,7 @@ tun_standby(struct tuntap *tt)
 static inline event_t
 tun_event_handle(const struct tuntap *tt)
 {
-#ifdef _WIN32
-    return &tt->rw_handle;
-#else
     return tt->fd;
-#endif
 }
 
 static inline void
@@ -723,12 +367,6 @@ tun_set(struct tuntap *tt,
                 *persistent = rwflags;
             }
         }
-#ifdef _WIN32
-        if (tt->windows_driver == WINDOWS_DRIVER_TAP_WINDOWS6 && (rwflags & EVENT_READ))
-        {
-            tun_read_queue(tt, 0);
-        }
-#endif
         tt->rwflags_debug = rwflags;
     }
 }

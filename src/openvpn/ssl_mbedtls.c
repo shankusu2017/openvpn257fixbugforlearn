@@ -108,6 +108,8 @@ tls_clear_error(void)
 void
 tls_ctx_server_new(struct tls_root_ctx *ctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+    
     ASSERT(NULL != ctx);
     CLEAR(*ctx);
 
@@ -122,6 +124,8 @@ tls_ctx_server_new(struct tls_root_ctx *ctx)
 void
 tls_ctx_client_new(struct tls_root_ctx *ctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(NULL != ctx);
     CLEAR(*ctx);
 
@@ -135,6 +139,8 @@ tls_ctx_client_new(struct tls_root_ctx *ctx)
 void
 tls_ctx_free(struct tls_root_ctx *ctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (ctx)
     {
         mbedtls_pk_free(ctx->priv_key);
@@ -204,6 +210,8 @@ mbedtls_ssl_export_keys_cb(void *p_expkey, const unsigned char *ms,
                            const unsigned char server_random[32],
                            mbedtls_tls_prf_types tls_prf_type)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     struct tls_session *session = p_expkey;
     struct key_state_ssl *ks_ssl = &session->key[KS_PRIMARY].ks_ssl;
     unsigned char client_server_random[64];
@@ -235,6 +243,8 @@ void
 key_state_export_keying_material(struct key_state_ssl *ssl,
                                  struct tls_session *session)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (ssl->exported_key_material)
     {
         unsigned int size = session->opt->ekm_size;
@@ -261,6 +271,8 @@ tls_ctx_set_options(struct tls_root_ctx *ctx, unsigned int ssl_flags)
 static const char *
 tls_translate_cipher_name(const char *cipher_name)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     const tls_cipher_name_pair *pair = tls_get_cipher_name_pair(cipher_name, strlen(cipher_name));
 
     if (NULL == pair)
@@ -294,6 +306,8 @@ tls_ctx_restrict_ciphers_tls13(struct tls_root_ctx *ctx, const char *ciphers)
 void
 tls_ctx_restrict_ciphers(struct tls_root_ctx *ctx, const char *ciphers)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     char *tmp_ciphers, *tmp_ciphers_orig, *token;
 
     if (NULL == ciphers)
@@ -330,6 +344,8 @@ tls_ctx_restrict_ciphers(struct tls_root_ctx *ctx, const char *ciphers)
 void
 tls_ctx_set_cert_profile(struct tls_root_ctx *ctx, const char *profile)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (!profile || 0 == strcmp(profile, "legacy")
         || 0 == strcmp(profile, "insecure"))
     {
@@ -352,6 +368,8 @@ tls_ctx_set_cert_profile(struct tls_root_ctx *ctx, const char *profile)
 void
 tls_ctx_set_tls_groups(struct tls_root_ctx *ctx, const char *groups)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(ctx);
     struct gc_arena gc = gc_new();
 
@@ -387,6 +405,8 @@ tls_ctx_set_tls_groups(struct tls_root_ctx *ctx, const char *groups)
 void
 tls_ctx_check_cert_time(const struct tls_root_ctx *ctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(ctx);
     if (ctx->crt_chain == NULL)
     {
@@ -408,6 +428,8 @@ void
 tls_ctx_load_dh_params(struct tls_root_ctx *ctx, const char *dh_file,
                        bool dh_inline)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (dh_inline)
     {
         if (!mbed_ok(mbedtls_dhm_parse_dhm(ctx->dhm_ctx,
@@ -460,6 +482,8 @@ void
 tls_ctx_load_cert_file(struct tls_root_ctx *ctx, const char *cert_file,
                        bool cert_inline)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(NULL != ctx);
 
     if (!ctx->crt_chain)
@@ -489,6 +513,8 @@ int
 tls_ctx_load_priv_file(struct tls_root_ctx *ctx, const char *priv_key_file,
                        bool priv_key_inline)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int status;
     ASSERT(NULL != ctx);
 
@@ -571,6 +597,8 @@ external_pkcs1_sign( void *ctx_voidptr,
                      mbedtls_md_type_t md_alg, unsigned int hashlen, const unsigned char *hash,
                      unsigned char *sig )
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     struct external_context *const ctx = ctx_voidptr;
     int rv;
     uint8_t *to_sign = NULL;
@@ -667,6 +695,8 @@ done:
 static inline size_t
 external_key_len(void *vctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     struct external_context *const ctx = vctx;
 
     return ctx->signature_length;
@@ -676,6 +706,8 @@ int
 tls_ctx_use_external_signing_func(struct tls_root_ctx *ctx,
                                   external_sign_func sign_func, void *sign_ctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(NULL != ctx);
 
     if (ctx->crt_chain == NULL)
@@ -711,6 +743,8 @@ static bool
 management_sign_func(void *sign_ctx, const void *src, size_t src_len,
                      void *dst, size_t dst_len)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     bool ret = false;
     char *src_b64 = NULL;
     char *dst_b64 = NULL;
@@ -746,6 +780,8 @@ cleanup:
 int
 tls_ctx_use_management_external_key(struct tls_root_ctx *ctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     return tls_ctx_use_external_signing_func(ctx, management_sign_func, NULL);
 }
 
@@ -755,6 +791,8 @@ void
 tls_ctx_load_ca(struct tls_root_ctx *ctx, const char *ca_file,
                 bool ca_inline, const char *ca_path, bool tls_server)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (ca_path)
     {
         msg(M_FATAL, "ERROR: mbed TLS cannot handle the capath directive");
@@ -783,6 +821,8 @@ void
 tls_ctx_load_extra_certs(struct tls_root_ctx *ctx, const char *extra_certs_file,
                          bool extra_certs_inline)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(NULL != ctx);
 
     if (!ctx->crt_chain)
@@ -821,6 +861,8 @@ tls_ctx_load_extra_certs(struct tls_root_ctx *ctx, const char *extra_certs_file,
 static inline void
 buf_free_entry(buffer_entry *entry)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (NULL != entry)
     {
         free(entry->data);
@@ -831,6 +873,8 @@ buf_free_entry(buffer_entry *entry)
 static void
 buf_free_entries(endless_buffer *buf)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     while (buf->first_block)
     {
         buffer_entry *cur_block = buf->first_block;
@@ -843,6 +887,8 @@ buf_free_entries(endless_buffer *buf)
 static int
 endless_buf_read( endless_buffer *in, unsigned char *out, size_t out_len )
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     size_t read_len = 0;
 
     if (in->first_block == NULL)
@@ -886,6 +932,8 @@ endless_buf_read( endless_buffer *in, unsigned char *out, size_t out_len )
 static int
 endless_buf_write( endless_buffer *out, const unsigned char *in, size_t len )
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     buffer_entry *new_block = malloc(sizeof(buffer_entry));
     if (NULL == new_block)
     {
@@ -922,13 +970,17 @@ endless_buf_write( endless_buffer *out, const unsigned char *in, size_t len )
 static int
 ssl_bio_read( void *ctx, unsigned char *out, size_t out_len)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     bio_ctx *my_ctx = (bio_ctx *) ctx;
     return endless_buf_read(&my_ctx->in, out, out_len);
 }
 
 static int
-ssl_bio_write( void *ctx, const unsigned char *in, size_t in_len)
+s
+sl_bio_write( void *ctx, const unsigned char *in, size_t in_len)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
     bio_ctx *my_ctx = (bio_ctx *) ctx;
     return endless_buf_write(&my_ctx->out, in, in_len);
 }
@@ -937,6 +989,7 @@ static void
 my_debug( void *ctx, int level, const char *file, int line,
           const char *str )
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
     int my_loglevel = (level < 3) ? D_TLS_DEBUG_MED : D_TLS_DEBUG;
     msg(my_loglevel, "mbed TLS msg (%s:%d): %s", file, line, str);
 }
@@ -947,6 +1000,8 @@ my_debug( void *ctx, int level, const char *file, int line,
 void
 tls_ctx_personalise_random(struct tls_root_ctx *ctx)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     static char old_sha256_hash[32] = {0};
     unsigned char sha256_hash[32] = {0};
     mbedtls_ctr_drbg_context *cd_ctx = rand_ctx_get();
@@ -994,6 +1049,8 @@ tls_version_max(void)
 static void
 tls_version_to_major_minor(int tls_ver, int *major, int *minor)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(major);
     ASSERT(minor);
 
@@ -1024,6 +1081,8 @@ void
 backend_tls_ctx_reload_crl(struct tls_root_ctx *ctx, const char *crl_file,
                            bool crl_inline)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(crl_file);
 
     if (ctx->crl == NULL)
@@ -1061,6 +1120,8 @@ key_state_ssl_init(struct key_state_ssl *ks_ssl,
                    const struct tls_root_ctx *ssl_ctx, bool is_server,
                    struct tls_session *session)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     ASSERT(NULL != ssl_ctx);
     ASSERT(ks_ssl);
     CLEAR(*ks_ssl);
@@ -1195,6 +1256,8 @@ key_state_ssl_init(struct key_state_ssl *ks_ssl,
 void
 key_state_ssl_free(struct key_state_ssl *ks_ssl)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (ks_ssl)
     {
         free(ks_ssl->exported_key_material);
@@ -1222,6 +1285,8 @@ key_state_ssl_free(struct key_state_ssl *ks_ssl)
 int
 key_state_write_plaintext(struct key_state_ssl *ks, struct buffer *buf)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int retval = 0;
 
     ASSERT(buf);
@@ -1240,6 +1305,8 @@ key_state_write_plaintext(struct key_state_ssl *ks, struct buffer *buf)
 int
 key_state_write_plaintext_const(struct key_state_ssl *ks, const uint8_t *data, int len)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int retval = 0;
     perf_push(PERF_BIO_WRITE_PLAINTEXT);
 
@@ -1288,6 +1355,8 @@ int
 key_state_read_ciphertext(struct key_state_ssl *ks, struct buffer *buf,
                           int maxlen)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int retval = 0;
     int len = 0;
 
@@ -1341,6 +1410,8 @@ key_state_read_ciphertext(struct key_state_ssl *ks, struct buffer *buf,
 int
 key_state_write_ciphertext(struct key_state_ssl *ks, struct buffer *buf)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int retval = 0;
     perf_push(PERF_BIO_WRITE_CIPHERTEXT);
 
@@ -1391,6 +1462,8 @@ int
 key_state_read_plaintext(struct key_state_ssl *ks, struct buffer *buf,
                          int maxlen)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     int retval = 0;
     int len = 0;
 
@@ -1452,6 +1525,8 @@ key_state_read_plaintext(struct key_state_ssl *ks, struct buffer *buf,
 void
 print_details(struct key_state_ssl *ks_ssl, const char *prefix)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     const mbedtls_x509_crt *cert;
     char s1[256];
     char s2[256];
@@ -1477,6 +1552,8 @@ show_available_tls_ciphers_list(const char *cipher_list,
                                 const char *tls_cert_profile,
                                 bool tls13)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     if (tls13)
     {
         /* mbed TLS has no TLS 1.3 support currently */
@@ -1505,6 +1582,8 @@ show_available_tls_ciphers_list(const char *cipher_list,
 void
 show_available_curves(void)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     const mbedtls_ecp_curve_info *pcurve = mbedtls_ecp_curve_list();
 
     if (NULL == pcurve)
@@ -1524,6 +1603,8 @@ show_available_curves(void)
 void
 get_highest_preference_tls_cipher(char *buf, int size)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     const char *cipher_name;
     const int *ciphers = mbedtls_ssl_list_ciphersuites();
     if (*ciphers == 0)
@@ -1538,6 +1619,8 @@ get_highest_preference_tls_cipher(char *buf, int size)
 const char *
 get_ssl_library_version(void)
 {
+    msg(M_DEBUG_LEVEL, "[== %s:%d %s ==]", __FILE__, __LINE__, __FUNCTION__);
+
     static char mbedtls_version[30];
     unsigned int pv = mbedtls_version_get_number();
     sprintf( mbedtls_version, "mbed TLS %d.%d.%d",

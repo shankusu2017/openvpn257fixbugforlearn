@@ -42,9 +42,9 @@
  */
 struct signal_info
 {
-    volatile int signal_received;
+    volatile int signal_received;   // 发生的事件
     volatile int source;
-    const char *signal_text;
+    const char *signal_text;        // 上述事件的describe
 };
 
 #define IS_SIG(c) ((c)->sig->signal_received)
